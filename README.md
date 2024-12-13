@@ -26,7 +26,9 @@ parallel(x in [1, 2, 3]) {
 ```
 
 1. **词法分析** 
+```
 Tokens: [LexToken(PARALLEL,'parallel',1,1), LexToken(LPAREN,'(',1,9), LexToken(IDENTIFIER,'x',1,10), LexToken(IN,'in',1,12), LexToken(LBRACKET,'[',1,15), LexToken(NUMBER,'1',1,16), LexToken(COMMA,',',1,17), LexToken(NUMBER,'2',1,19), LexToken(COMMA,',',1,20), LexToken(NUMBER,'3',1,22), LexToken(RBRACKET,']',1,23), LexToken(RPAREN,')',1,24), LexToken(LBRACE,'{',1,26), LexToken(IDENTIFIER,'x',1,30), LexToken(EQUALS,'=',1,32), LexToken(IDENTIFIER,'x',1,34), LexToken(TIMES,'*',1,36), LexToken(NUMBER,'2',1,38), LexToken(SEMICOLON,';',1,39), LexToken(RETURN,'return',1,43), LexToken(IDENTIFIER,'x',1,50), LexToken(SEMICOLON,';',1,51), LexToken(RBRACE,'}',1,53)]
+```
 2. **语法分析** 
 ```
 {'type': 'parallel', 'variable': 'x', 'list': [1, 2, 3], 'body': [{'type': 'assign', 'variable': 'x', 'expr': {'type': 'multiply', 'left': 'x', 'right': '2'}}, {'type': 'return', 'value': 'x'}]}
