@@ -28,13 +28,12 @@ def p_CompUnit(p):
         p[0] = ASTNode('CompUnit', [p[1]])
 
 def p_Decls(p):
-    '''Decls : Decl
-             | Decl Decls'''
+    '''Decls : Decl Decls
+             | Decl'''
     if len(p) == 2:
         p[0] = ASTNode('Decls', [p[1]])
     else:
         p[0] = ASTNode('Decls', [p[1]] + p[2].children)
-
 
 # 声明
 def p_Decl(p):
@@ -87,41 +86,73 @@ def p_ConstExp(p):
 
 # 基本类型
 def p_BType(p):
-    '''BType : INT'''
+    '''BType : INT
+             | BOOL
+             | FLOAT
+             | STR'''
     p[0] = ASTNode('BType', value=p[1])
 
 # 变量声明
 def p_VarDecl(p):
-    '''VarDecl : BType VarDef SEMICOLON
-               | BType VarDef COMMA VarDef SEMICOLON'''
-    if len(p) == 4:
-        p[0] = ASTNode('VarDecl', [p[1], p[2]])
+    '''VarDecl : BType VarDefList SEMICOLON'''
+    p[0] = ASTNode('VarDecl', [p[1], p[2]])
+
+def p_VarDefList(p):
+    '''VarDefList : VarDef
+                  | VarDef COMMA VarDefList'''
+    if len(p) == 2:
+        # 单个变量定义
+        p[0] = [p[1]]
     else:
-        p[0] = ASTNode('VarDecl', [p[1], p[2], p[4]])
+        # 多个变量定义
+        p[0] = [p[1]] + p[3]
 
 # 变量定义
 def p_VarDef(p):
     '''VarDef : IDENTIFIER
+              | IDENTIFIER ArrayDimensions
               | IDENTIFIER ASSIGN InitVal
-              | IDENTIFIER LBRACKET ConstExp RBRACKET
-              | IDENTIFIER LBRACKET ConstExp RBRACKET ASSIGN InitVal'''
+              | IDENTIFIER ArrayDimensions ASSIGN InitVal'''
     if len(p) == 2:
+        # 普通变量
         p[0] = ASTNode('VarDef', [ASTNode('Ident', value=p[1])])
+    elif len(p) == 3:
+        # 多维数组
+        p[0] = ASTNode('VarDef', [ASTNode('Ident', value=p[1]), p[2]])
     elif len(p) == 4:
-        p[0] = ASTNode('VarDef', [ASTNode('Ident', value=p[1]), p[3]])
-    elif len(p) == 5:
+        # print(f"vardef {p[1], p[2], p[3]}")
         p[0] = ASTNode('VarDef', [ASTNode('Ident', value=p[1]), p[3]])
     else:
-        p[0] = ASTNode('VarDef', [ASTNode('Ident', value=p[1]), p[3], p[6]])
+        p[0] = ASTNode('VarDef', [ASTNode('Ident', value=p[1]), p[2], p[4]])
+
+def p_ArrayDimensions(p):
+    '''ArrayDimensions : LBRACKET ConstExp RBRACKET
+                       | ArrayDimensions LBRACKET ConstExp RBRACKET'''
+    if len(p) == 4:
+        # 单维数组 `[ConstExp]`
+        p[0] = ASTNode('ArrayDimensions', children=[p[2]])
+    else:
+        # 多维数组 `[ConstExp][ConstExp]...`
+        p[0] = ASTNode('ArrayDimensions', children=p[1].children + [p[3]])
 
 # 变量初值
 def p_InitVal(p):
     '''InitVal : Exp
-               | LBRACE InitVal RBRACE'''
+               | LBRACE InitValList RBRACE'''
     if len(p) == 2:
+        # 单一值初始化
         p[0] = ASTNode('InitVal', [p[1]])
     else:
-        p[0] = ASTNode('InitVal', [p[2]])
+        # 多维数组初始化
+        p[0] = ASTNode('InitVal', p[2])
+
+def p_InitValList(p):
+    '''InitValList : InitVal
+                   | InitVal COMMA InitValList'''
+    if len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = [p[1]] + p[3]
 
 # 表达式
 def p_Exp(p):
@@ -198,8 +229,8 @@ def p_UnaryExp(p):
                 | UnaryOp UnaryExp'''
     if len(p) == 2:
         p[0] = p[1]
-    elif len(p) == 4:
-        p[0] = ASTNode('Call', [ASTNode('Ident', value=p[1]), p[3]])
+    elif len(p) == 5:
+        p[0] = ASTNode('FuncCall', [ASTNode('Ident', value=p[1]), p[3]])
     else:
         p[0] = ASTNode('UnaryExp', [p[1], p[2]])
 
@@ -214,22 +245,42 @@ def p_UnaryOp(p):
 def p_PrimaryExp(p):
     '''PrimaryExp : LPAREN Exp RPAREN
                   | LVal
-                  | INTCONST'''
+                  | INTCONST
+                  | FLOATCONST
+                  | STRCONST
+                  | TRUE
+                  | FALSE'''
     if len(p) == 4:
-        p[0] = p[2]
-    elif isinstance(p[1], int):
+        # 带括号的表达式
+        p[0] = ASTNode('PrimaryExp', [p[2]])
+    elif p.slice[1].type == 'LVal':
+        # 左值表达式
+        p[0] = ASTNode('LVal', children=[p[1]])
+    elif p.slice[1].type == 'TRUE':
+        # 布尔常量 true
+        p[0] = ASTNode('BoolConst', value=True)
+    elif p.slice[1].type == 'FALSE':
+        # 布尔常量 false
+        p[0] = ASTNode('BoolConst', value=False)
+    elif p.slice[1].type == 'INTCONST':
+        # 整型常量
         p[0] = ASTNode('IntConst', value=p[1])
-    else:
-        p[0] = p[1]
+    elif p.slice[1].type == 'FLOATCONST':
+        # 浮点数常量
+        p[0] = ASTNode('FloatConst', value=p[1])
+    elif p.slice[1].type == 'STRCONST':
+        # 字符串常量
+        p[0] = ASTNode('StrConst', value=p[1])
+
 
 # 左值表达式
 def p_LVal(p):
     '''LVal : IDENTIFIER
-            | IDENTIFIER LBRACKET Exp RBRACKET'''
+            | IDENTIFIER ArrayDimensions'''
     if len(p) == 2:
         p[0] = ASTNode('LVal', [ASTNode('Ident', value=p[1])])
     else:
-        p[0] = ASTNode('LVal', [ASTNode('Ident', value=p[1]), p[3]])
+        p[0] = ASTNode('LVal', [ASTNode('Ident', value=p[1]), p[2]])
 
 # 主函数定义
 def p_MainFuncDef(p):
@@ -338,14 +389,14 @@ def p_FuncDefs(p):
 
 # FuncDef (函数定义)
 def p_FuncDef(p):
-    '''FuncDef : DEF IDENTIFIER LPAREN FuncFParams RPAREN Block
-               | DEF IDENTIFIER LPAREN RPAREN Block'''
-    if len(p) == 7:
+    '''FuncDef : DEF BType IDENTIFIER LPAREN FuncFParams RPAREN  Block
+               | DEF BType IDENTIFIER LPAREN RPAREN Block'''
+    if len(p) == 8:
         # 函数定义，有形参
-        p[0] = ASTNode('FuncDef', [ASTNode('Ident', value=p[2]), p[4], p[6]])
+        p[0] = ASTNode('FuncDef', p[2], [ASTNode('Ident', value=p[3]), p[5], p[7]])
     else:
         # 函数定义，无形参
-        p[0] = ASTNode('FuncDef', [ASTNode('Ident', value=p[2]), p[5]])
+        p[0] = ASTNode('FuncDef', p[2], [ASTNode('Ident', value=p[3]), p[6]])
 
 # FuncFParams (函数形参列表)
 def p_FuncFParams(p):
@@ -358,8 +409,8 @@ def p_FuncFParams(p):
 
 # FuncFParam (单个形参)
 def p_FuncFParam(p):
-    '''FuncFParam : IDENTIFIER'''
-    p[0] = ASTNode('FuncFParam', [ASTNode('Ident', value=p[1])])
+    '''FuncFParam : BType IDENTIFIER'''
+    p[0] = ASTNode('FuncFParam', [p[1], ASTNode('Ident', value=p[2])])
 
 
 # FuncRParams （函数实参）

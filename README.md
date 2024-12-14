@@ -41,3 +41,9 @@ def compute(x):
     return x
 result = list(ThreadPoolExecutor().map(compute, [1, 2, 3]))
 ```
+
+
+parallel(x in [a, b, c]) {
+  x.2 = x.1 * 2;
+  return x.2;
+}

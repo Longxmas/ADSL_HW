@@ -4,6 +4,11 @@ import ply.lex as lex
 reserved = {
     'const': 'CONST',
     'int': 'INT',
+    'float': 'FLOAT',
+    'bool': "BOOL",
+    "str": "STR",
+    "true": "TRUE",
+    "false": "FALSE",
     'return': 'RETURN',
     'if': 'IF',
     'else': 'ELSE',
@@ -23,7 +28,8 @@ tokens = [
     'IDENTIFIER', 'INTCONST', 'PLUS', 'MINUS', 'TIMES', 'DIVIDE', 'MOD', 
     'LPAREN', 'RPAREN', 'LBRACE', 'RBRACE', 'LBRACKET', 'RBRACKET',
     'SEMICOLON', 'COMMA', 'ASSIGN', 'EQUAL', 'NOTEQUAL', 'LESS', 'LESSEQUAL',
-    'GREATER', 'GREATEREQUAL', 'LOGICALAND', 'LOGICALOR', 'NOT', 'FORMATSTRING'
+    'GREATER', 'GREATEREQUAL', 'LOGICALAND', 'LOGICALOR', 'NOT', 'FORMATSTRING',
+    'FLOATCONST', 'STRCONST',
 ] + list(reserved.values())
 
 # 字面值
@@ -57,10 +63,25 @@ def t_IDENTIFIER(t):
     t.type = reserved.get(t.value, 'IDENTIFIER')  # 检查是否为保留字
     return t
 
+def t_FLOATCONST(t):
+    r'\d+\.\d+'
+    t.value = float(t.value)  # 转换为浮点类型
+    return t
+
 # 数值常量
 def t_INTCONST(t):
     r'0|[1-9][0-9]*'
     t.value = int(t.value)
+    return t
+
+def t_STRCONST(t):
+    r'"([^"\\]|\\.)*"'  # 匹配字符串字面量，支持转义字符
+    t.value = t.value[1:-1]  # 去掉引号
+    return t
+
+def t_BOOLCONST(t):
+    r'true|false'
+    t.value = t.value == 'true'  # 转换为布尔值
     return t
 
 # 格式化字符串

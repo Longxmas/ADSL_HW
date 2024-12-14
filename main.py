@@ -10,13 +10,14 @@ def execute_generated_code(generated_code):
         f.write(str(result))
 
 code = """
-def func(a, b) { return a + b; }
+def int fun(int x, int y) {
+  return x + y;
+}
 
 int main() {
-  parallel(x in [1, 2, 3]) {
-    x = x * 2;
-    return x;
-  }
+  int x = 1;
+  int y = 2;
+  int z = fun(x, y);
   return 0;
 }
 """
