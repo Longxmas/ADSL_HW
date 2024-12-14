@@ -1,5 +1,5 @@
 from lexer import lexer, lex_input
-from parser import parser
+from parser import parser, format_ast
 from generator import CodeGenerator
 
 def execute_generated_code(generated_code):
@@ -10,12 +10,7 @@ def execute_generated_code(generated_code):
         f.write(str(result))
 
 code = """
-def p(a) {
-  return a + 1;
-}
-
 int main() {
-  int a = 0;
   parallel(x in [1, 2, 3]) {
     x = x * 2;
     return x;
@@ -28,9 +23,9 @@ tokens = lex_input(code)
 for t in tokens:
   print(f"{t}")
 
-# 语法分析：传递 tokens 列表给解析器
+# 语法分析
 result = parser.parse(code)
-print(result)
+print(format_ast(result))
 
 # generator = CodeGenerator()
 # python_code = generator.generate_code(result)

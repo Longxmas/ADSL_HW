@@ -255,7 +255,7 @@ def p_Stmt(p):
     elif len(p) == 6:
         # IF '(' Cond ')' Stmt
         p[0] = ASTNode('IfStmt', [p[3], p[5]])
-    elif len(p) == 10:
+    elif len(p) == 10 and p[1] == "for":
         # FOR '(' [ForStmt] ';' [Cond] ';' [ForStmt] ')' Stmt
         p[0] = ASTNode('ForStmt', [p[3], p[5], p[7], p[9]])
     elif len(p) == 3 and p[1] == 'break':
@@ -276,7 +276,7 @@ def p_Stmt(p):
     elif len(p) == 8:
         # 'printf' '(' FormatString PRINTFParams ')' ';'
         p[0] = ASTNode('PrintfStmt', [p[3], p[4]])
-    elif len(p) == 11:
+    elif len(p) == 10 and p[1] == "parallel":
         # 'parallel' '(' IDENTIFIER 'in' LBRACKET list RBRACKET ')' Block
         p[0] = ASTNode('ParallelStmt', [ASTNode('Ident', value=p[3]), p[6], p[9]])
 
@@ -404,3 +404,33 @@ log = logging.getLogger()
 
 # 构建 Parser
 parser = yacc.yacc(debug=True, debuglog=log)
+
+
+def format_ast(node, indent=0):
+    """
+    按指定格式递归打印 AST。
+    :param node: 当前 ASTNode 节点
+    :param indent: 缩进层级
+    :return: 格式化字符串
+    """
+    if not isinstance(node, ASTNode):
+        return repr(node)  # 对非 ASTNode 类型直接返回字符串表示
+
+    # 打印当前节点的信息
+    indent_str = " " * (indent * 4)  # 每个层级缩进 4 个空格
+    result = f"{indent_str}ASTNode(type='{node.type}',"
+    if node.value is not None:
+        result += f" value='{node.value}',"
+    result += f" children=["
+
+    # 递归打印子节点
+    if isinstance(node.children, list) and node.children:
+        children_str = []
+        for child in node.children:
+            child_str = format_ast(child, indent + 1)  # 子节点递归缩进
+            children_str.append(child_str)
+        result += "\n" + ",\n".join(children_str) + f"\n{indent_str}]"
+    else:
+        result += "]"  # 无子节点的情况
+    result += ")"
+    return result
