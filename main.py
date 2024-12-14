@@ -16,6 +16,10 @@ def p(a) {
 
 int main() {
   int a = 0;
+  parallel(x in [1, 2, 3]) {
+    x = x * 2;
+    return x;
+  }
   return 0;
 }
 """

@@ -236,7 +236,7 @@ def p_Stmt(p):
             | RETURN SEMICOLON
             | LVal ASSIGN GETINT LPAREN RPAREN SEMICOLON
             | PRINTF LPAREN FormatString PRINTFParams RPAREN SEMICOLON
-            | PARALLEL LPAREN IDENTIFIER IN LBRACKET list RBRACKET RPAREN LBRACE statements RBRACE'''
+            | PARALLEL LPAREN IDENTIFIER IN LBRACKET list RBRACKET RPAREN Block'''
     if len(p) == 5 and p[2] == '=':
         # LVal '=' Exp ';'
         p[0] = ASTNode('AssignStmt', [p[1], p[3]])
@@ -277,8 +277,8 @@ def p_Stmt(p):
         # 'printf' '(' FormatString PRINTFParams ')' ';'
         p[0] = ASTNode('PrintfStmt', [p[3], p[4]])
     elif len(p) == 11:
-        # 'parallel' '(' IDENTIFIER 'in' LBRACKET list RBRACKET ')' LBRACE statements RBRACE
-        p[0] = ASTNode('ParallelStmt', [ASTNode('Ident', value=p[3]), p[6], p[10]])
+        # 'parallel' '(' IDENTIFIER 'in' LBRACKET list RBRACKET ')' Block
+        p[0] = ASTNode('ParallelStmt', [ASTNode('Ident', value=p[3]), p[6], p[9]])
 
 # 修正后的定义
 def p_PRINTFParams(p):
@@ -310,11 +310,6 @@ def p_list(p):
         p[0] = [p[1]]
     else:
         p[0] = p[1] + [p[3]]
-
-def p_statements(p):
-    '''statements : Stmt'''
-    if len(p) == 2:
-        p[0] = [p[1]]
 
 # FuncDef (函数定义)
 def p_FuncDef(p):
