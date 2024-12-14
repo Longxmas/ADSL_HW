@@ -13,13 +13,28 @@ class ASTNode:
 
 # 编译单元
 def p_CompUnit(p):
-    '''CompUnit : Decl CompUnit
-                | FuncDef CompUnit
+    '''CompUnit : Decls FuncDefs MainFuncDef
+                | Decls MainFuncDef
+                | FuncDefs MainFuncDef
                 | MainFuncDef'''
-    if len(p) == 3:
-        p[0] = ASTNode('CompUnit', [p[1], p[2]])
+    if len(p) == 4:
+        # 包含声明、函数定义和主函数
+        p[0] = ASTNode('CompUnit', p[1].children + p[2].children + [p[3]])
+    elif len(p) == 3:
+        # 包含声明或函数定义，以及主函数
+        p[0] = ASTNode('CompUnit', p[1].children + [p[2]])
     else:
+        # 仅包含主函数
         p[0] = ASTNode('CompUnit', [p[1]])
+
+def p_Decls(p):
+    '''Decls : Decl
+             | Decl Decls'''
+    if len(p) == 2:
+        p[0] = ASTNode('Decls', [p[1]])
+    else:
+        p[0] = ASTNode('Decls', [p[1]] + p[2].children)
+
 
 # 声明
 def p_Decl(p):
@@ -310,6 +325,16 @@ def p_list(p):
         p[0] = [p[1]]
     else:
         p[0] = p[1] + [p[3]]
+       
+def p_FuncDefs(p):
+    '''FuncDefs : FuncDef
+                | FuncDef FuncDefs'''
+    if len(p) == 2:
+        # 单个函数定义
+        p[0] = ASTNode('FuncDefs', [p[1]])
+    else:
+        # 多个函数定义
+        p[0] = ASTNode('FuncDefs', [p[1]] + p[2].children)
 
 # FuncDef (函数定义)
 def p_FuncDef(p):

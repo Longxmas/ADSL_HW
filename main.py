@@ -10,6 +10,8 @@ def execute_generated_code(generated_code):
         f.write(str(result))
 
 code = """
+def func(a, b) { return a + b; }
+
 int main() {
   parallel(x in [1, 2, 3]) {
     x = x * 2;
