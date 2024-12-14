@@ -10,23 +10,28 @@ def execute_generated_code(generated_code):
         f.write(str(result))
 
 code = """
-parallel(x in [1, 2, 3]) {
-  x = x * 2;
-  return x;
+def p(a) {
+  return a + 1;
+}
+
+int main() {
+  int a = 0;
+  return 0;
 }
 """
 # 词法分析
 tokens = lex_input(code)
-print(f"Tokens: {tokens}")
+for t in tokens:
+  print(f"{t}")
 
 # 语法分析：传递 tokens 列表给解析器
 result = parser.parse(code)
 print(result)
 
-generator = CodeGenerator()
-python_code = generator.generate_code(result)
-with open('out.py', 'w') as f:
-    f.write(str(python_code))
-print(python_code)
+# generator = CodeGenerator()
+# python_code = generator.generate_code(result)
+# with open('out.py', 'w') as f:
+#     f.write(str(python_code))
+# print(python_code)
 
-execute_generated_code(python_code)
+# execute_generated_code(python_code)

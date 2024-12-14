@@ -1,61 +1,88 @@
 import ply.lex as lex
 
-# 保留字表
+# 保留字
 reserved = {
+    'const': 'CONST',
+    'int': 'INT',
+    'return': 'RETURN',
+    'if': 'IF',
+    'else': 'ELSE',
+    'for': 'FOR',
+    'break': 'BREAK',
+    'continue': 'CONTINUE',
+    'getint': 'GETINT',
+    'printf': 'PRINTF',
     'parallel': 'PARALLEL',
+    'main': 'MAIN',
     'in': 'IN',
-    'return': 'RETURN'
+    'def': 'DEF',
 }
 
-# 词法单元列表
+# 词法单元
 tokens = [
-    'LPAREN', 'RPAREN', 'LBRACKET', 'RBRACKET', 'LBRACE', 'RBRACE', 
-    'COMMA', 'NUMBER', 'IDENTIFIER', 'EQUALS', 'PLUS', 'MINUS', 'TIMES', 'DIVIDE', 'SEMICOLON'
+    'IDENTIFIER', 'INTCONST', 'PLUS', 'MINUS', 'TIMES', 'DIVIDE', 'MOD', 
+    'LPAREN', 'RPAREN', 'LBRACE', 'RBRACE', 'LBRACKET', 'RBRACKET',
+    'SEMICOLON', 'COMMA', 'ASSIGN', 'EQUAL', 'NOTEQUAL', 'LESS', 'LESSEQUAL',
+    'GREATER', 'GREATEREQUAL', 'LOGICALAND', 'LOGICALOR', 'NOT', 'FORMATSTRING'
 ] + list(reserved.values())
 
-# 词法规则
-t_LPAREN = r'\('
-t_RPAREN = r'\)'
-t_LBRACKET = r'\['
-t_RBRACKET = r'\]'
-t_LBRACE = r'\{'
-t_RBRACE = r'\}'
-t_COMMA = r','
-t_NUMBER = r'\d+'
-t_IDENTIFIER = r'[a-zA-Z_][a-zA-Z_0-9]*'
-t_EQUALS = r'='
+# 字面值
 t_PLUS = r'\+'
 t_MINUS = r'-'
 t_TIMES = r'\*'
 t_DIVIDE = r'/'
-t_SEMICOLON = r';'  # 添加对分号的支持
+t_MOD = r'%'
+t_LPAREN = r'\('
+t_RPAREN = r'\)'
+t_LBRACE = r'\{'
+t_RBRACE = r'\}'
+t_LBRACKET = r'\['
+t_RBRACKET = r'\]'
+t_SEMICOLON = r';'
+t_COMMA = r','
+t_ASSIGN = r'='
+t_EQUAL = r'=='
+t_NOTEQUAL = r'!='
+t_LESS = r'<'
+t_LESSEQUAL = r'<='
+t_GREATER = r'>'
+t_GREATEREQUAL = r'>='
+t_LOGICALAND = r'&&'
+t_LOGICALOR = r'\|\|'
+t_NOT = r'!'
 
-# 忽略空格和换行符
-t_ignore = ' \t\n'
-
-# 处理保留字
-def t_PARALLEL(t):
-    r'parallel'
-    t.type = reserved.get(t.value, 'PARALLEL')
+# 标识符
+def t_IDENTIFIER(t):
+    r'[a-zA-Z_][a-zA-Z_0-9]*'
+    t.type = reserved.get(t.value, 'IDENTIFIER')  # 检查是否为保留字
     return t
 
-def t_IN(t):
-    r'in'
-    t.type = reserved.get(t.value, 'IN')
+# 数值常量
+def t_INTCONST(t):
+    r'0|[1-9][0-9]*'
+    t.value = int(t.value)
     return t
 
-def t_RETURN(t):
-    r'return'
-    t.type = reserved.get(t.value, 'RETURN')
+# 格式化字符串
+def t_FORMATSTRING(t):
+    r'"[^"\n]*"'
     return t
 
-# 错误字符处理
+# 忽略空白字符
+t_ignore = ' \t'
+
+# 行号处理
+def t_newline(t):
+    r'\n+'
+    t.lexer.lineno += len(t.value)
+
+# 错误处理
 def t_error(t):
-    print(f"Illegal character '{t.value[0]}'")
+    print(f"Illegal character '{t.value[0]}' at line {t.lineno}")
     t.lexer.skip(1)
-    
-# 创建 lexer 实例
-lexer = lex.lex() 
+
+# 构建 lexer
+lexer = lex.lex()
 
 # 词法分析函数
 def lex_input(text):
