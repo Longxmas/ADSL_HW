@@ -90,8 +90,18 @@ def p_BType(p):
     '''BType : INT
              | BOOL
              | FLOAT
-             | STR'''
-    p[0] = ASTNode('BType', value=p[1])
+             | STR
+             | VOID
+             | MUTEX INT
+             | MUTEX BOOL
+             | MUTEX FLOAT
+             | PIPE INT  
+             | PIPE BOOL  
+             | PIPE FLOAT'''
+    if len(p) == 2:
+        p[0] = ASTNode('BType', value=p[1])
+    elif len(p) == 3:
+        p[0] = ASTNode('BType', value=p[1] + ' ' + p[2])
 
 # 变量声明
 def p_VarDecl(p):
@@ -250,16 +260,13 @@ def p_PrimaryExp(p):
                   | FLOATCONST
                   | STRCONST
                   | TRUE
-                  | FALSE
-                  | RANGE LPAREN Exp COMMA Exp COMMA Exp RPAREN
-                  | RANGE LPAREN Exp COMMA Exp RPAREN
-                  | RANGE LPAREN Exp RPAREN'''
+                  | FALSE'''
     if len(p) == 4:
         # 带括号的表达式
         p[0] = ASTNode('PrimaryExp', [p[2]])
     elif p.slice[1].type == 'LVal':
         # 左值表达式
-        p[0] = ASTNode('LVal', children=[p[1]])
+        p[0] = p[1]
     elif p.slice[1].type == 'TRUE':
         # 布尔常量 true
         p[0] = ASTNode('BoolConst', value=True)
@@ -275,27 +282,6 @@ def p_PrimaryExp(p):
     elif p.slice[1].type == 'STRCONST':
         # 字符串常量
         p[0] = ASTNode('StrConst', value=p[1])
-    elif len(p) == 9:
-        # range(begin, end, step)
-        p[0] = ASTNode('Range', children=[
-            ASTNode('Begin', value=p[3]),
-            ASTNode('End', value=p[5]),
-            ASTNode('Step', value=p[7])
-        ])
-    elif len(p) == 7:
-        # range(begin, end) with step default to 1
-        p[0] = ASTNode('Range', children=[
-            ASTNode('Begin', value=p[3]),
-            ASTNode('End', value=p[5]),
-            ASTNode('Step', value=1)  # 默认步长
-        ])
-    elif len(p) == 5:
-        # range(end) with begin default to 0, step default to 1
-        p[0] = ASTNode('Range', children=[
-            ASTNode('Begin', value=0),  # 默认开始
-            ASTNode('End', value=p[3]),
-            ASTNode('Step', value=1)  # 默认步长
-        ])
 
 
 # 左值表达式
@@ -321,17 +307,24 @@ def p_Stmt(p):
             | IF LPAREN Cond RPAREN Stmt ELSE Stmt
             | IF LPAREN Cond RPAREN Stmt
             | FOR IDENTIFIER IN IDENTIFIER Block
+            | FOR IDENTIFIER IN RANGE LPAREN Exp COMMA Exp COMMA Exp RPAREN Block
+            | FOR IDENTIFIER IN RANGE LPAREN Exp COMMA Exp RPAREN Block
+            | FOR IDENTIFIER IN RANGE LPAREN Exp RPAREN Block
             | BREAK SEMICOLON
             | CONTINUE SEMICOLON
             | RETURN Exp SEMICOLON
             | RETURN SEMICOLON
+            | LVal LSHIFT LVal SEMICOLON
             | LVal ASSIGN GETINT LPAREN RPAREN SEMICOLON
             | PRINTF LPAREN STRCONST RPAREN SEMICOLON
             | PRINTF LPAREN STRCONST PRINTFParams RPAREN SEMICOLON
-            | PARALLEL LPAREN IDENTIFIER IN LBRACKET list RBRACKET RPAREN Block'''
+            | PARALLEL LPAREN ParallelIndentList RPAREN IN ParallelRealList Block'''
     if len(p) == 5 and p[2] == '=':
         # LVal '=' Exp ';'
         p[0] = ASTNode('AssignStmt', [p[1], p[3]])
+    elif len(p) == 5 and p[2] == '<<':
+        # LVal '<<' LVal ';'
+        p[0] = ASTNode('ShiftLeftStmt', [p[1], p[3]])
     elif len(p) == 3 and p[1] != ';':
         # Exp ';'
         p[0] = ASTNode('ExpStmt', [p[1]])
@@ -341,7 +334,7 @@ def p_Stmt(p):
     elif len(p) == 2:
         # Block
         p[0] = p[1]
-    elif len(p) == 8:
+    elif len(p) == 8 and p[1] == "if":
         # IF '(' Cond ')' Stmt ELSE Stmt
         p[0] = ASTNode('IfStmt', [p[3], p[5], p[7]])
     elif len(p) == 6 and p[1] == "if":
@@ -349,7 +342,34 @@ def p_Stmt(p):
         p[0] = ASTNode('IfStmt', [p[3], p[5]])
     elif len(p) == 6 and p[1] == "for":
         # FOR IDENTIFIER IN IDENTIFIER Block
-        p[0] = ASTNode('ForStmt', [p[2], p[4], p[5]])
+        p[0] = ASTNode('ForStmt', [ASTNode('Ident', value=p[2]), p[4], p[5]])
+    elif len(p) == 13 and p[1] == "for":
+        # FOR IDENTIFIER IN RANGE '(' Exp ',' Exp ',' Exp ')' Block
+        # range(begin, end, step)
+        p[4] = ASTNode('Range', children=[
+            ASTNode('Begin', value=p[6]),
+            ASTNode('End', value=p[8]),
+            ASTNode('Step', value=p[10])
+        ])
+        p[0] = ASTNode('ForStmt', [ASTNode('Ident', value=p[2]), p[4], p[12]])
+    elif len(p) == 11 and p[1] == "for":
+        # FOR IDENTIFIER IN RANGE '(' Exp ',' Exp ')' Block
+        # range(begin, end) with step default to 1
+        p[4] = ASTNode('Range', children=[
+            ASTNode('Begin', value=p[6]),
+            ASTNode('End', value=p[8]),
+            ASTNode('Step', value=1)
+        ])
+        p[0] = ASTNode('ForStmt', [ASTNode('Ident', value=p[2]), p[4], p[10]])
+    elif len(p) == 9 and p[1] == "for":
+        # FOR IDENTIFIER IN RANGE '(' Exp ')' Block
+        # range(end) with begin default to 0, step default to 1
+        p[4] = ASTNode('Range', children=[
+            ASTNode('Begin', value=0),
+            ASTNode('End', value=p[6]),
+            ASTNode('Step', value=1)
+        ])
+        p[0] = ASTNode('ForStmt', [ASTNode('Ident', value=p[2]), p[4], p[8]])
     elif len(p) == 3 and p[1] == 'break':
         # 'break' ';'
         p[0] = ASTNode('BreakStmt')
@@ -367,13 +387,13 @@ def p_Stmt(p):
         p[0] = ASTNode('GetIntStmt', [p[1]])
     elif len(p) == 6 and p[1] == "printf":
         # 'printf' '(' STRCONST ')' ';'
-        p[0] = ASTNode('PrintfStmt', [p[3]])
+        p[0] = ASTNode('PrintfStmt', [ASTNode('STRCONST', value=p[3])])
     elif len(p) == 7 and p[1] == "printf":
         # 'printf' '(' STRCONST PRINTFParams ')' ';'
-        p[0] = ASTNode('PrintfStmt', [p[3], p[4]])
-    elif len(p) == 10 and p[1] == "parallel":
-        # 'parallel' '(' IDENTIFIER 'in' LBRACKET list RBRACKET ')' Block
-        p[0] = ASTNode('ParallelStmt', [ASTNode('Ident', value=p[3]), p[6], p[9]])
+        p[0] = ASTNode('PrintfStmt', [ASTNode('STRCONST', value=p[3]), p[4]])
+    elif len(p) == 8 and p[1] == "parallel":
+        # 'parallel' '(' ParallelIndentList ')' 'in' ParallelRealList Block
+        p[0] = ASTNode('ParallelStmt', [p[3], p[6], p[7]])
 
 # 修正后的定义
 def p_PRINTFParams(p):
@@ -388,19 +408,19 @@ def p_PRINTFParams_empty(p):
     '''PRINTFParams : '''
     p[0] = []
 
-# ForStmt
-def p_ForStmt(p):
-    '''ForStmt : LVal ASSIGN Exp
-               | '''
-    if len(p) == 1:
-        p[0] = None
+# 并行语句的形参部分
+def p_ParallelIndentList(p):
+    '''ParallelIndentList : IDENTIFIER
+                          | ParallelIndentList COMMA IDENTIFIER'''
+    if len(p) == 2:
+        p[0] = [ASTNode('Ident', value=p[1])]
     else:
-        p[0] = ASTNode('ForAssign', [p[1], p[3]])
+        p[0] = p[1] + [ASTNode('Ident', value=p[3])]
 
-# 并行语句的列表部分
-def p_list(p):
-    '''list : Exp
-            | list COMMA Exp'''
+# 并行语句的实参部分
+def p_ParallelRealList(p):
+    '''ParallelRealList : Exp
+                        | ParallelRealList COMMA Exp'''
     if len(p) == 2:
         p[0] = [p[1]]
     else:
@@ -518,10 +538,11 @@ def format_ast(node, indent=0):
 
     # 打印当前节点的信息
     indent_str = " " * (indent * 4)  # 每个层级缩进 4 个空格
-    result = f"{indent_str}ASTNode(type='{node.node_type}',"
+    result = f"{indent_str}ASTNode(type='{node.node_type}'"
     if node.word_value is not None:
-        result += f" value='{node.word_value}',"
-    result += f" children=["
+        result += f", value='{node.word_value}'"
+    if len(node.child_nodes) > 0:
+        result += f", children=["
 
     # 递归打印子节点
     if isinstance(node.child_nodes, list) and node.child_nodes:

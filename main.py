@@ -11,7 +11,11 @@ def execute_generated_code(generated_code):
 
 code = """
 int main() {
-  int a[10] = range(0, 10, 1);
+  mutex int x = 1;
+  parallel (x, y, z) in a, b, c {
+    printf("1");
+    x << y;
+  }
   return 0;
 }
 """
@@ -22,7 +26,7 @@ for t in tokens:
 
 # 语法分析
 result = parser.parse(code)
-# print(format_ast(result))
+print(format_ast(result))
 result.build()
 
 print(result)

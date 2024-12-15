@@ -4,6 +4,7 @@ import ply.lex as lex
 reserved = {
     'const': 'CONST',
     'int': 'INT',
+    'void': "VOID",
     'float': 'FLOAT',
     'bool': "BOOL",
     "str": "STR",
@@ -22,6 +23,8 @@ reserved = {
     'in': 'IN',
     'def': 'DEF',
     'range': 'RANGE',
+    'mutex': 'MUTEX',
+    'pipe': 'PIPE',
 }
 
 # 词法单元
@@ -30,7 +33,7 @@ tokens = [
     'LPAREN', 'RPAREN', 'LBRACE', 'RBRACE', 'LBRACKET', 'RBRACKET',
     'SEMICOLON', 'COMMA', 'ASSIGN', 'EQUAL', 'NOTEQUAL', 'LESS', 'LESSEQUAL',
     'GREATER', 'GREATEREQUAL', 'LOGICALAND', 'LOGICALOR', 'NOT', 'FORMATSTRING',
-    'FLOATCONST', 'STRCONST',
+    'FLOATCONST', 'STRCONST', 'LSHIFT'
 ] + list(reserved.values())
 
 # 字面值
@@ -57,6 +60,7 @@ t_GREATEREQUAL = r'>='
 t_LOGICALAND = r'&&'
 t_LOGICALOR = r'\|\|'
 t_NOT = r'!'
+t_LSHIFT = r'<<'
 
 # 标识符
 def t_IDENTIFIER(t):
