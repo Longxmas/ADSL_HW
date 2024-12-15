@@ -1,5 +1,6 @@
 import ply.yacc as yacc
 from lexer import tokens
+from util import ASTNode
 
 # 用于存储抽象语法树的工具类
 # class ASTNode:
@@ -70,7 +71,7 @@ def p_ConstInitVal(p):
     if len(p) == 2:
         p[0] = ASTNode('ConstInitVal', [p[1]])
     else:
-        p[0] = ASTNode('ConstInitVal', p[2])
+        p[0] = ASTNode('ConstInitVal', [p[2]])
 
 def p_ConstInitValList(p):
     '''ConstInitValList : ConstInitVal
@@ -144,7 +145,7 @@ def p_InitVal(p):
         p[0] = ASTNode('InitVal', [p[1]])
     else:
         # 多维数组初始化
-        p[0] = ASTNode('InitVal', p[2])
+        p[0] = ASTNode('InitVal', [p[2]])
 
 def p_InitValList(p):
     '''InitValList : InitVal
@@ -517,15 +518,15 @@ def format_ast(node, indent=0):
 
     # 打印当前节点的信息
     indent_str = " " * (indent * 4)  # 每个层级缩进 4 个空格
-    result = f"{indent_str}ASTNode(type='{node.type}',"
-    if node.value is not None:
-        result += f" value='{node.value}',"
+    result = f"{indent_str}ASTNode(type='{node.node_type}',"
+    if node.word_value is not None:
+        result += f" value='{node.word_value}',"
     result += f" children=["
 
     # 递归打印子节点
-    if isinstance(node.children, list) and node.children:
+    if isinstance(node.child_nodes, list) and node.child_nodes:
         children_str = []
-        for child in node.children:
+        for child in node.child_nodes:
             child_str = format_ast(child, indent + 1)  # 子节点递归缩进
             children_str.append(child_str)
         result += "\n" + ",\n".join(children_str) + f"\n{indent_str}]"

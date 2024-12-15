@@ -12,9 +12,6 @@ def execute_generated_code(generated_code):
 code = """
 int main() {
   int a[10] = range(0, 10, 1);
-  for x in a {
-    printf("%d", x+1);
-  }
   return 0;
 }
 """
@@ -25,7 +22,10 @@ for t in tokens:
 
 # 语法分析
 result = parser.parse(code)
-print(format_ast(result))
+# print(format_ast(result))
+result.build()
+
+print(result)
 
 # generator = CodeGenerator()
 # python_code = generator.generate_code(result)
