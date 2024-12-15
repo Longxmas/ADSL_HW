@@ -21,6 +21,7 @@ reserved = {
     'main': 'MAIN',
     'in': 'IN',
     'def': 'DEF',
+    'range': 'RANGE',
 }
 
 # 词法单元
@@ -82,11 +83,6 @@ def t_STRCONST(t):
 def t_BOOLCONST(t):
     r'true|false'
     t.value = t.value == 'true'  # 转换为布尔值
-    return t
-
-# 格式化字符串
-def t_FORMATSTRING(t):
-    r'"[^"\n]*"'
     return t
 
 # 忽略空白字符
