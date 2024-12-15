@@ -249,7 +249,10 @@ def p_PrimaryExp(p):
                   | FLOATCONST
                   | STRCONST
                   | TRUE
-                  | FALSE'''
+                  | FALSE
+                  | RANGE LPAREN Exp COMMA Exp COMMA Exp RPAREN
+                  | RANGE LPAREN Exp COMMA Exp RPAREN
+                  | RANGE LPAREN Exp RPAREN'''
     if len(p) == 4:
         # 带括号的表达式
         p[0] = ASTNode('PrimaryExp', [p[2]])
@@ -271,6 +274,27 @@ def p_PrimaryExp(p):
     elif p.slice[1].type == 'STRCONST':
         # 字符串常量
         p[0] = ASTNode('StrConst', value=p[1])
+    elif len(p) == 9:
+        # range(begin, end, step)
+        p[0] = ASTNode('Range', children=[
+            ASTNode('Begin', value=p[3]),
+            ASTNode('End', value=p[5]),
+            ASTNode('Step', value=p[7])
+        ])
+    elif len(p) == 7:
+        # range(begin, end) with step default to 1
+        p[0] = ASTNode('Range', children=[
+            ASTNode('Begin', value=p[3]),
+            ASTNode('End', value=p[5]),
+            ASTNode('Step', value=1)  # 默认步长
+        ])
+    elif len(p) == 5:
+        # range(end) with begin default to 0, step default to 1
+        p[0] = ASTNode('Range', children=[
+            ASTNode('Begin', value=0),  # 默认开始
+            ASTNode('End', value=p[3]),
+            ASTNode('Step', value=1)  # 默认步长
+        ])
 
 
 # 左值表达式
@@ -295,13 +319,14 @@ def p_Stmt(p):
             | Block
             | IF LPAREN Cond RPAREN Stmt ELSE Stmt
             | IF LPAREN Cond RPAREN Stmt
-            | FOR LPAREN ForStmt SEMICOLON Cond SEMICOLON ForStmt RPAREN Stmt
+            | FOR IDENTIFIER IN IDENTIFIER Block
             | BREAK SEMICOLON
             | CONTINUE SEMICOLON
             | RETURN Exp SEMICOLON
             | RETURN SEMICOLON
             | LVal ASSIGN GETINT LPAREN RPAREN SEMICOLON
-            | PRINTF LPAREN FormatString PRINTFParams RPAREN SEMICOLON
+            | PRINTF LPAREN STRCONST RPAREN SEMICOLON
+            | PRINTF LPAREN STRCONST PRINTFParams RPAREN SEMICOLON
             | PARALLEL LPAREN IDENTIFIER IN LBRACKET list RBRACKET RPAREN Block'''
     if len(p) == 5 and p[2] == '=':
         # LVal '=' Exp ';'
@@ -318,12 +343,12 @@ def p_Stmt(p):
     elif len(p) == 8:
         # IF '(' Cond ')' Stmt ELSE Stmt
         p[0] = ASTNode('IfStmt', [p[3], p[5], p[7]])
-    elif len(p) == 6:
+    elif len(p) == 6 and p[1] == "if":
         # IF '(' Cond ')' Stmt
         p[0] = ASTNode('IfStmt', [p[3], p[5]])
-    elif len(p) == 10 and p[1] == "for":
-        # FOR '(' [ForStmt] ';' [Cond] ';' [ForStmt] ')' Stmt
-        p[0] = ASTNode('ForStmt', [p[3], p[5], p[7], p[9]])
+    elif len(p) == 6 and p[1] == "for":
+        # FOR IDENTIFIER IN IDENTIFIER Block
+        p[0] = ASTNode('ForStmt', [p[2], p[4], p[5]])
     elif len(p) == 3 and p[1] == 'break':
         # 'break' ';'
         p[0] = ASTNode('BreakStmt')
@@ -336,11 +361,14 @@ def p_Stmt(p):
     elif len(p) == 3 and p[1] == 'return':
         # 'return' ';'
         p[0] = ASTNode('ReturnStmt')
-    elif len(p) == 7:
+    elif len(p) == 7 and p[2] == "=":
         # LVal '=' 'getint' '(' ')' ';'
         p[0] = ASTNode('GetIntStmt', [p[1]])
-    elif len(p) == 8:
-        # 'printf' '(' FormatString PRINTFParams ')' ';'
+    elif len(p) == 6 and p[1] == "printf":
+        # 'printf' '(' STRCONST ')' ';'
+        p[0] = ASTNode('PrintfStmt', [p[3]])
+    elif len(p) == 7 and p[1] == "printf":
+        # 'printf' '(' STRCONST PRINTFParams ')' ';'
         p[0] = ASTNode('PrintfStmt', [p[3], p[4]])
     elif len(p) == 10 and p[1] == "parallel":
         # 'parallel' '(' IDENTIFIER 'in' LBRACKET list RBRACKET ')' Block
@@ -348,12 +376,12 @@ def p_Stmt(p):
 
 # 修正后的定义
 def p_PRINTFParams(p):
-    '''PRINTFParams : Exp
-                    | Exp COMMA PRINTFParams'''
-    if len(p) == 2:
-        p[0] = [p[1]]
+    '''PRINTFParams : COMMA Exp
+                    | COMMA Exp PRINTFParams'''
+    if len(p) == 3:
+        p[0] = [p[2]]
     else:
-        p[0] = [p[1]] + p[3]
+        p[0] = [p[2]] + p[3]
 
 def p_PRINTFParams_empty(p):
     '''PRINTFParams : '''
@@ -453,11 +481,6 @@ def p_BlockItem(p):
 def p_Cond(p):
     '''Cond : LOrExp'''
     p[0] = ASTNode('Cond', [p[1]])
-
-# FormatString 的解析规则
-def p_FormatString(p):
-    '''FormatString : FORMATSTRING'''
-    p[0] = ASTNode('FormatString', value=p[1])
 
 
 # 错误处理

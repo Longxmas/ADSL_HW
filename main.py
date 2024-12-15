@@ -10,14 +10,11 @@ def execute_generated_code(generated_code):
         f.write(str(result))
 
 code = """
-def int fun(int x, int y) {
-  return x + y;
-}
-
 int main() {
-  int x = 1;
-  int y = 2;
-  int z = fun(x, y);
+  int a[10] = range(0, 10, 1);
+  for x in a {
+    printf("%d", x+1);
+  }
   return 0;
 }
 """
