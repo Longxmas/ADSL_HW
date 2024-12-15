@@ -2,14 +2,14 @@ import ply.yacc as yacc
 from lexer import tokens
 
 # 用于存储抽象语法树的工具类
-class ASTNode:
-    def __init__(self, type, children=None, value=None):
-        self.type = type  # 节点类型
-        self.children = children if children else []  # 子节点
-        self.value = value  # 节点值
-
-    def __repr__(self):
-        return f"ASTNode(type={self.type}, value={self.value}, children={self.children})"
+# class ASTNode:
+#     def __init__(self, type, children=None, value=None):
+#         self.type = type  # 节点类型
+#         self.children = children if children else []  # 子节点
+#         self.value = value  # 节点值
+#
+#     def __repr__(self):
+#         return f"ASTNode(type={self.type}, value={self.value}, children={self.children})"
 
 # 编译单元
 def p_CompUnit(p):
