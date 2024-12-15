@@ -1,2 +1,4 @@
+.idea/
+__pycache__/
 parselog.txt
 parsetab.py
