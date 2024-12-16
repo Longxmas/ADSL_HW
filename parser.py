@@ -141,10 +141,10 @@ def p_ArrayDimensions(p):
                        | ArrayDimensions LBRACKET ConstExp RBRACKET'''
     if len(p) == 4:
         # 单维数组 `[ConstExp]`
-        p[0] = ASTNode('ArrayDimensions', child_nodes=[p[2]])
+        p[0] = ASTNode('ArrayDimensions', children=[p[2]])
     else:
         # 多维数组 `[ConstExp][ConstExp]...`
-        p[0] = ASTNode('ArrayDimensions', child_nodes=p[1].child_nodes + [p[3]])
+        p[0] = ASTNode('ArrayDimensions', children=p[1].child_nodes + [p[3]])
 
 # 变量初值
 def p_InitVal(p):
