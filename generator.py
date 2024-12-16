@@ -1,8 +1,6 @@
 from util import ASTNode
 
 class Generator:
-    SEP = '\n'      # 分隔符
-
     def __init__(self, root_node: ASTNode):
         self.root_node = root_node
         self.code = ""
@@ -104,7 +102,7 @@ class Generator:
             self.g_ConstInitVal(children[3])
         else:
             raise RuntimeError("g_ConstDef fail")
-        self.g_SEMICOLON()
+        self.g_NEWLINE()
 
     def g_ConstInitVal(self, node: ASTNode):
         if equals_NT(node.child_nodes[0], 'ConstExp'):
@@ -173,7 +171,7 @@ class Generator:
             self.g_InitVal(children[1])
         else:
             raise RuntimeError("g_VarDef fail")
-        self.g_SEMICOLON()
+        self.g_NEWLINE()
 
     def g_ArrayDimensions(self, node: ASTNode):
         for child in node.child_nodes:
@@ -342,19 +340,19 @@ class Generator:
             self.g_ASSIGN()
             self.g_SPACE()
             self.g_Exp(children[1])
-            self.g_SEMICOLON()
+            self.g_NEWLINE()
         elif equals_NT(node, 'ShiftLeftStmt'):
             self.g_Exp(children[0])
             self.g_SPACE()
             self.g_LSHIFT()
             self.g_SPACE()
             self.g_Exp(children[1])
-            self.g_SEMICOLON()
+            self.g_NEWLINE()
         elif equals_NT(node, 'ExpStmt'):
             self.g_Exp(children[0])
-            self.g_SEMICOLON()
+            self.g_NEWLINE()
         elif equals_NT(node, 'EmptyStmt'):
-            self.g_SEMICOLON()
+            self.g_NEWLINE()
         elif equals_NT(node, 'BlockStmt'):
             self.g_Block(children[0])
         elif equals_NT(node, 'IfStmt'):
@@ -370,7 +368,7 @@ class Generator:
         elif equals_NT(node, 'ForStmt'):
             self.g_FOR()
             self.g_SPACE()
-            if equals_T(children[1], 'Ident'):  # for i := range arr
+            if equals_T(children[0], 'Ident'):  # for i := range arr
                 self.g_Ident(children[0])
                 self.g_SPACE()
                 self.g_INFER_ASSIGN()
@@ -379,23 +377,64 @@ class Generator:
                 self.g_SPACE()
                 self.g_Ident(children[1])
                 self.g_SPACE()
+                self.g_Stmt(children[2])
             else:   # for ;;
-                assert equals_NT(children[1], 'Range')
+                if len(children) == 4:      # for x;x;x
+                    assert equals_NT(children[0], 'ForExp')
+                    self.g_ForExp(children[0])
+                    self.g_SEMICOLON()
+                    self.g_SPACE()
+                    assert equals_NT(children[1], 'Cond')
+                    self.g_Cond(children[1])
+                    self.g_SEMICOLON()
+                    self.g_SPACE()
+                    assert equals_NT(children[2], 'ForExp')
+                    self.g_ForExp(children[2])
+                    self.g_SPACE()
+                    self.g_Stmt(children[3])
+                elif equals_NT(children[0], 'Cond'):    # for ;x;x
+                    self.g_SEMICOLON()
+                    self.g_SPACE()
+                    assert equals_NT(children[0], 'Cond')
+                    self.g_Cond(children[0])
+                    self.g_SEMICOLON()
+                    self.g_SPACE()
+                    assert equals_NT(children[1], 'ForExp')
+                    self.g_ForExp(children[1])
+                    self.g_SPACE()
+                    self.g_Stmt(children[2])
+                elif equals_NT(children[1], 'Cond'):    # for x;x;
+                    assert equals_NT(children[0], 'ForExp')
+                    self.g_ForExp(children[0])
+                    self.g_SEMICOLON()
+                    self.g_SPACE()
+                    self.g_Cond(children[1])
+                    self.g_SEMICOLON()
+                    self.g_SPACE()
+                    self.g_Stmt(children[2])
+                else:       # for x;;x
+                    assert equals_NT(children[0], 'ForExp')
+                    self.g_ForExp(children[0])
+                    self.g_SEMICOLON()
+                    self.g_SEMICOLON()
+                    self.g_SPACE()
+                    assert equals_NT(children[1], 'ForExp')
+                    self.g_ForExp(children[1])
+                    self.g_SPACE()
+                    self.g_Stmt(children[2])
 
-                # TODO
-            self.g_Block(children[2])
         elif equals_NT(node, 'BreakStmt'):
             self.g_BREAK()
-            self.g_SEMICOLON()
+            self.g_NEWLINE()
         elif equals_NT(node, 'ContinueStmt'):
             self.g_CONTINUE()
-            self.g_SEMICOLON()
+            self.g_NEWLINE()
         elif equals_NT(node, 'ReturnStmt'):
             self.g_RETURN()
             if len(children) == 1:
                 self.g_SPACE()
                 self.g_Exp(children[0])
-            self.g_SEMICOLON()
+            self.g_NEWLINE()
         elif equals_NT(node, 'GetIntStmt'):
             self.code += r'fmt.Scanf("%d", &'
             self.g_LVal(children[0])
@@ -407,12 +446,22 @@ class Generator:
             if len(children) == 2:
                 self.g_PRINTFParams(children[1])
             self.g_RPAREN()
-            self.g_SEMICOLON()
+            self.g_NEWLINE()
         elif equals_NT(node, 'ParallelStmt'):
             pass
             # TODO
         else:
             raise RuntimeError("g_Stmt fail")
+
+    def g_ForExp(self, node: ASTNode):
+        children = node.child_nodes
+        assert equals_NT(children[0], 'LVal')
+        self.g_LVal(children[0])
+        self.g_SPACE()
+        self.g_ASSIGN()
+        self.g_SPACE()
+        assert equals_NT(children[1], 'Exp')
+        self.g_Exp(children[1])
 
     def g_PRINTFParams(self, node: ASTNode):
         for child in node.child_nodes:
@@ -532,12 +581,12 @@ class Generator:
     def g_FALSE(self):
         self.code += 'false'
 
-    def g_SEMICOLON(self):
-        self.code += Generator.SEP
     def g_NEWLINE(self):
         self.code += '\n'
     def g_SPACE(self):
         self.code += ' '
+    def g_SEMICOLON(self):
+        self.code += ';'
     def g_COMMA(self):
         self.code += ','
     def g_LPAREN(self):
