@@ -342,7 +342,7 @@ def p_Stmt(p):
         p[0] = ASTNode('IfStmt', [p[3], p[5]])
     elif len(p) == 6 and p[1] == "for":
         # FOR IDENTIFIER IN IDENTIFIER Block
-        p[0] = ASTNode('ForStmt', [ASTNode('Ident', value=p[2]), p[4], p[5]])
+        p[0] = ASTNode('ForStmt', [ASTNode('Ident', value=p[2]), ASTNode('Ident', value=p[4]), p[5]])
     elif len(p) == 13 and p[1] == "for":
         # FOR IDENTIFIER IN RANGE '(' Exp ',' Exp ',' Exp ')' Block
         # range(begin, end, step)
