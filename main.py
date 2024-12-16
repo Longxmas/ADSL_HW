@@ -17,6 +17,8 @@ def int add(int x, int y) {
         return x + y;
 }
 int main() {
+    pipe int ch;
+    pipe int ach[3];
   const int length[2][2] = {{3, 5*4},{1,2}};
   int a[3] = {1, 2, 3};
   int b[3] = {4, 5, 6};
@@ -31,7 +33,7 @@ int main() {
     printf("%d\n", t);
   }
   int i;
-  for (; i< 3; i=i+1) {
+  for (i = 0; i< 3; i=i+1) {
     i = i + 1;
   }
   return 0;

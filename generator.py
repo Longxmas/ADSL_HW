@@ -150,6 +150,9 @@ class Generator:
         self.g_Ident(children[0])
         self.g_SPACE()
         if len(children) == 1:
+            if self.get_type_prefix(btype) == 'pipe':
+                self.g_CHAN()
+                self.g_SPACE()
             self.g_BType(btype)
         elif len(children) == 3:
             self.g_ArrayDimensions(children[1])
@@ -162,6 +165,9 @@ class Generator:
             self.g_InitVal(children[2])
         elif equals_NT(children[1], 'ArrayDimensions'):
             self.g_ArrayDimensions(children[1])
+            if self.get_type_prefix(btype) == 'pipe':
+                self.g_CHAN()
+                self.g_SPACE()
             self.g_BType(btype)
         elif equals_NT(children[1], 'InitVal'):
             self.g_BType(btype)
@@ -422,7 +428,6 @@ class Generator:
                     self.g_ForExp(children[1])
                     self.g_SPACE()
                     self.g_Stmt(children[2])
-
         elif equals_NT(node, 'BreakStmt'):
             self.g_BREAK()
             self.g_NEWLINE()
@@ -660,6 +665,8 @@ class Generator:
         self.code += 'const'
     def g_VAR(self):
         self.code += 'var'
+    def g_CHAN(self):
+        self.code += 'chan'
 
 
 
