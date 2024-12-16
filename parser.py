@@ -355,7 +355,7 @@ def p_Stmt(p):
         p[0] = ASTNode('ForStmt', [p[3], p[5], p[8]])
     elif len(p) == 9 and p[1] == "for" and p[3] == ";" and p[5] == ";":
         # FOR LPAREN SEMICOLON Cond SEMICOLON ForExp RPAREN Stmt
-        p[0] = ASTNode('ForStmt', [p[3], p[5], p[8]])
+        p[0] = ASTNode('ForStmt', [p[4], p[6], p[8]])
     elif len(p) == 3 and p[1] == 'break':
         # 'break' ';'
         p[0] = ASTNode('BreakStmt')
