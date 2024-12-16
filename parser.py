@@ -20,10 +20,10 @@ def p_CompUnit(p):
                 | MainFuncDef'''
     if len(p) == 4:
         # 包含声明、函数定义和主函数
-        p[0] = ASTNode('CompUnit', p[1].child_nodes + p[2].child_nodes + [p[3]])
+        p[0] = ASTNode('CompUnit', [p[1], p[2], p[3]])
     elif len(p) == 3:
         # 包含声明或函数定义，以及主函数
-        p[0] = ASTNode('CompUnit', p[1].child_nodes + [p[2]])
+        p[0] = ASTNode('CompUnit', [p[1], p[2]])
     else:
         # 仅包含主函数
         p[0] = ASTNode('CompUnit', [p[1]])
@@ -439,10 +439,10 @@ def p_FuncDef(p):
                | DEF BType IDENTIFIER LPAREN RPAREN Block'''
     if len(p) == 8:
         # 函数定义，有形参
-        p[0] = ASTNode('FuncDef', p[2], [ASTNode('Ident', value=p[3]), p[5], p[7]])
+        p[0] = ASTNode('FuncDef', [p[2], ASTNode('Ident', value=p[3]), p[5], p[7]])
     else:
         # 函数定义，无形参
-        p[0] = ASTNode('FuncDef', p[2], [ASTNode('Ident', value=p[3]), p[6]])
+        p[0] = ASTNode('FuncDef', [p[2], ASTNode('Ident', value=p[3]), p[6]])
 
 # FuncFParams (函数形参列表)
 def p_FuncFParams(p):
