@@ -11,9 +11,25 @@ def execute_generated_code(generated_code):
 
 code = """
 def int add(int x, int y) {
-    return x + y;
+    if (x == y) {
+        return x * 2;
+    } else 
+        return x + y;
 }
 int main() {
+  const int length[2][2] = {{3, 5*4},{1,2}};
+  int a[3] = {1, 2, 3};
+  int b[3] = {4, 5, 6};
+  pipe int c[3];
+  parallel (x, y, z) in a, b, c {
+    z << add(x, y);
+  }
+  int a2[3] = {0, 1, 2};
+  for i in a2 {
+    int t;
+    t << c[i];
+    printf("%d\n", t);
+  }
   return 0;
 }
 """
@@ -29,9 +45,9 @@ result.build()
 
 # print(result)
 
-# generator = Generator(result)
-# generator.generate()
-# print(generator.code)
+generator = Generator(result)
+generator.generate()
+print(generator.code)
 # python_code = generator.generate_code(result)
 # with open('out.py', 'w') as f:
 #     f.write(str(python_code))

@@ -60,10 +60,10 @@ def p_ConstDef(p):
                 | IDENTIFIER LBRACKET ConstExp RBRACKET LBRACKET ConstExp RBRACKET ASSIGN ConstInitVal'''
     if len(p) == 4:
         p[0] = ASTNode('ConstDef', [ASTNode('Ident', value=p[1]), p[3]])
-    elif len(p) == 6:
-        p[0] = ASTNode('ConstDef', [ASTNode('Ident', value=p[1]), p[3], p[5]])
+    elif len(p) == 7:
+        p[0] = ASTNode('ConstDef', [ASTNode('Ident', value=p[1]), p[3], p[6]])
     else:
-        p[0] = ASTNode('ConstDef', [ASTNode('Ident', value=p[1]), p[3], p[5], p[7], p[9]])
+        p[0] = ASTNode('ConstDef', [ASTNode('Ident', value=p[1]), p[3], p[6], p[9]])
 
 def p_ConstInitVal(p):
     '''ConstInitVal : ConstExp
@@ -269,19 +269,19 @@ def p_PrimaryExp(p):
         p[0] = ASTNode('PrimaryExp', [p[1]])
     elif p.slice[1].type == 'TRUE':
         # 布尔常量 true
-        p[0] = ASTNode('BoolConst', value=True)
+        p[0] = ASTNode('PrimaryExp', [ASTNode('BoolConst', value=p[1])])
     elif p.slice[1].type == 'FALSE':
         # 布尔常量 false
-        p[0] = ASTNode('BoolConst', value=False)
+        p[0] = ASTNode('PrimaryExp', [ASTNode('BoolConst', value=p[1])])
     elif p.slice[1].type == 'INTCONST':
         # 整型常量
-        p[0] = ASTNode('IntConst', value=p[1])
+        p[0] = ASTNode('PrimaryExp', [ASTNode('IntConst', value=p[1])])
     elif p.slice[1].type == 'FLOATCONST':
         # 浮点数常量
-        p[0] = ASTNode('FloatConst', value=p[1])
+        p[0] = ASTNode('PrimaryExp', [ASTNode('FloatConst', value=p[1])])
     elif p.slice[1].type == 'STRCONST':
         # 字符串常量
-        p[0] = ASTNode('StrConst', value=p[1])
+        p[0] = ASTNode('PrimaryExp', [ASTNode('StrConst', value=p[1])])
 
 
 # 左值表达式
