@@ -306,10 +306,11 @@ def p_Stmt(p):
             | Block
             | IF LPAREN Cond RPAREN Stmt ELSE Stmt
             | IF LPAREN Cond RPAREN Stmt
-            | FOR IDENTIFIER IN IDENTIFIER Block
-            | FOR IDENTIFIER IN RANGE LPAREN Exp COMMA Exp COMMA Exp RPAREN Block
-            | FOR IDENTIFIER IN RANGE LPAREN Exp COMMA Exp RPAREN Block
-            | FOR IDENTIFIER IN RANGE LPAREN Exp RPAREN Block
+            | FOR IDENTIFIER IN IDENTIFIER Stmt
+            | FOR LPAREN ForExp SEMICOLON Cond SEMICOLON ForExp RPAREN Stmt
+            | FOR LPAREN ForExp SEMICOLON SEMICOLON ForExp RPAREN Stmt
+            | FOR LPAREN ForExp SEMICOLON Cond SEMICOLON RPAREN Stmt
+            | FOR LPAREN SEMICOLON Cond SEMICOLON ForExp RPAREN Stmt
             | BREAK SEMICOLON
             | CONTINUE SEMICOLON
             | RETURN Exp SEMICOLON
@@ -341,35 +342,20 @@ def p_Stmt(p):
         # IF '(' Cond ')' Stmt
         p[0] = ASTNode('IfStmt', [p[3], p[5]])
     elif len(p) == 6 and p[1] == "for":
-        # FOR IDENTIFIER IN IDENTIFIER Block
+        # FOR IDENTIFIER IN IDENTIFIER Stmt
         p[0] = ASTNode('ForStmt', [ASTNode('Ident', value=p[2]), ASTNode('Ident', value=p[4]), p[5]])
-    elif len(p) == 13 and p[1] == "for":
-        # FOR IDENTIFIER IN RANGE '(' Exp ',' Exp ',' Exp ')' Block
-        # range(begin, end, step)
-        p[4] = ASTNode('Range', children=[
-            ASTNode('Begin', value=p[6]),
-            ASTNode('End', value=p[8]),
-            ASTNode('Step', value=p[10])
-        ])
-        p[0] = ASTNode('ForStmt', [ASTNode('Ident', value=p[2]), p[4], p[12]])
-    elif len(p) == 11 and p[1] == "for":
-        # FOR IDENTIFIER IN RANGE '(' Exp ',' Exp ')' Block
-        # range(begin, end) with step default to 1
-        p[4] = ASTNode('Range', children=[
-            ASTNode('Begin', value=p[6]),
-            ASTNode('End', value=p[8]),
-            ASTNode('Step', value=1)
-        ])
-        p[0] = ASTNode('ForStmt', [ASTNode('Ident', value=p[2]), p[4], p[10]])
-    elif len(p) == 9 and p[1] == "for":
-        # FOR IDENTIFIER IN RANGE '(' Exp ')' Block
-        # range(end) with begin default to 0, step default to 1
-        p[4] = ASTNode('Range', children=[
-            ASTNode('Begin', value=0),
-            ASTNode('End', value=p[6]),
-            ASTNode('Step', value=1)
-        ])
-        p[0] = ASTNode('ForStmt', [ASTNode('Ident', value=p[2]), p[4], p[8]])
+    elif len(p) == 10 and p[1] == "for":
+        # FOR LPAREN ForExp SEMICOLON Cond SEMICOLON ForExp RPAREN Stmt
+        p[0] = ASTNode('ForStmt', [p[3], p[5], p[7], p[9]])
+    elif len(p) == 9 and p[1] == "for" and p[4] == ";" and p[5] == ";":
+        # FOR LPAREN ForExp SEMICOLON SEMICOLON ForExp RPAREN Stmt
+        p[0] = ASTNode('ForStmt', [p[3], p[6], p[8]])
+    elif len(p) == 9 and p[1] == "for" and p[4] == ";" and p[6] == ";":
+        # FOR LPAREN ForExp SEMICOLON Cond SEMICOLON RPAREN Stmt
+        p[0] = ASTNode('ForStmt', [p[3], p[5], p[8]])
+    elif len(p) == 9 and p[1] == "for" and p[3] == ";" and p[5] == ";":
+        # FOR LPAREN SEMICOLON Cond SEMICOLON ForExp RPAREN Stmt
+        p[0] = ASTNode('ForStmt', [p[3], p[5], p[8]])
     elif len(p) == 3 and p[1] == 'break':
         # 'break' ';'
         p[0] = ASTNode('BreakStmt')
@@ -394,6 +380,10 @@ def p_Stmt(p):
     elif len(p) == 8 and p[1] == "parallel":
         # 'parallel' '(' ParallelIndentList ')' 'in' ParallelRealList Block
         p[0] = ASTNode('ParallelStmt', [p[3], p[6], p[7]])
+
+def p_ForExp(p):
+    '''ForExp : LVal ASSIGN Exp'''
+    p[0] = ASTNode('ForExp', [p[1], p[3]])
 
 # 修正后的定义
 def p_PRINTFParams(p):
