@@ -5,6 +5,7 @@ class ASTNode:
     """
     parent_node: 父节点
     is_terminal: 是否是终结符
+    node_type: is_terminal == false时才有意义，表示当前非终结符类型
     child_nodes: is_terminal == false时才有意义，表示子节点
     word_type: is_terminal == true时才有意义，表示终结符类型（即lexer.py中的tokens）
     word_value: is_terminal == true时才有意义，表示终结符对应的值（关键字、数字、字符串）
