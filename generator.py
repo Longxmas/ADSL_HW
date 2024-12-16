@@ -66,7 +66,7 @@ class Generator:
         # TODO
         for child in node.child_nodes:
             if equals_T(child, 'IDENTIFIER'):
-                self.g_IDENTIFIER(child)
+                self.g_IDENT(child)
             elif equals_T(child, 'LBRACKET'):
                 self.g_LBRACKET()
             elif equals_T(child, 'RBRACKET'):
@@ -206,7 +206,7 @@ class Generator:
             if equals_NT(child, 'PrimaryExp'):
                 self.g_PrimaryExp(child)
             elif equals_T(child, 'IDENTIFIER'):
-                self.g_IDENTIFIER()
+                self.g_IDENT()
             elif equals_T(child, 'LPAREN'):
                 self.g_LPAREN()
             elif equals_T(child, 'RPAREN'):
@@ -257,7 +257,7 @@ class Generator:
     def g_LVal(self, node: ASTNode):
         for child in node.child_nodes:
             if equals_T(child, 'IDENTIFIER'):
-                self.g_IDENTIFIER(child)
+                self.g_IDENT(child)
             elif equals_NT(child, 'ArrayDimensions'):
                 self.g_ArrayDimensions(child)
             else:
@@ -346,12 +346,15 @@ class Generator:
                 raise RuntimeError("g_FuncDefs fail")
 
     def g_FuncDef(self, node: ASTNode):
+        children = node.child_nodes
         self.g_FUNC()
+        assert equals_NT(children[0], '')
+        self.g_IDENT()
 
     ################################################################
     # 以下是终结符
     ################################################################
-    def g_IDENTIFIER(self, node: ASTNode):
+    def g_IDENT(self, node: ASTNode):
         self.code += node.word_value
     def g_INTCONST(self, node: ASTNode):
         self.code += str(node.word_value)

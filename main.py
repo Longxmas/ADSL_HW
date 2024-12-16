@@ -30,15 +30,15 @@ int main() {
 """
 # 词法分析
 tokens = lex_input(code)
-for t in tokens:
-  print(f"{t}")
+# for t in tokens:
+#   print(f"{t}")
 
 # 语法分析
 result = parser.parse(code)
 print(format_ast(result))
 result.build()
 
-print(result)
+# print(result)
 
 generator = Generator(result)
 generator.generate()
