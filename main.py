@@ -1,6 +1,6 @@
 from lexer import lexer, lex_input
 from parser import parser, format_ast
-from generator import CodeGenerator
+from generator import Generator
 
 def execute_generated_code(generated_code):
     local_vars = {}
@@ -29,7 +29,9 @@ result.build()
 
 print(result)
 
-# generator = CodeGenerator()
+generator = Generator(result)
+generator.generate()
+print(generator.code)
 # python_code = generator.generate_code(result)
 # with open('out.py', 'w') as f:
 #     f.write(str(python_code))
