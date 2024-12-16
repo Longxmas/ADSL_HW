@@ -62,6 +62,8 @@ class Generator:
         assert equals_T(children[0], 'Ident')
         self.g_Ident(children[0])
         self.g_SPACE()
+        if self.get_type_prefix(btype) is not None:
+            raise RuntimeError("mutex/pipe cannot be const")
         if len(children) == 2:      # 非数组
             self.g_BType(btype)
             self.g_SPACE()
@@ -358,9 +360,7 @@ class Generator:
         elif equals_NT(node, 'IfStmt'):
             self.g_IF()
             self.g_SPACE()
-            self.g_LPAREN()
             self.g_Cond(children[0])
-            self.g_RPAREN()
             self.g_SPACE()
             self.g_Stmt(children[1])
             if len(children) == 3:
@@ -370,14 +370,18 @@ class Generator:
         elif equals_NT(node, 'ForStmt'):
             self.g_FOR()
             self.g_SPACE()
-            self.g_Ident(children[0])
-            self.g_SPACE()
-            self.g_INFER_ASSIGN()
-            self.g_SPACE()
-            if equals_T(children[1], 'Ident'):
+            if equals_T(children[1], 'Ident'):  # for i := range arr
+                self.g_Ident(children[0])
+                self.g_SPACE()
+                self.g_INFER_ASSIGN()
+                self.g_SPACE()
+                self.g_RANGE()
+                self.g_SPACE()
                 self.g_Ident(children[1])
-            else:
+                self.g_SPACE()
+            else:   # for ;;
                 assert equals_NT(children[1], 'Range')
+
                 # TODO
             self.g_Block(children[2])
         elif equals_NT(node, 'BreakStmt'):
@@ -502,7 +506,13 @@ class Generator:
     # 以下是终结符
     ################################################################
     def g_BType(self, node: ASTNode):
-        self.code += node.word_value
+        self.code += node.word_value.split(' ')[-1]
+    def get_type_prefix(self, node: ASTNode):
+        values = node.word_value.split(' ')
+        if len(values) == 1:
+            return None
+        else:
+            return values[0]
     def g_Op(self, node: ASTNode):
         self.code += node.word_value
     def g_UnaryOp(self, node: ASTNode):
@@ -593,6 +603,8 @@ class Generator:
         self.code += 'continue'
     def g_RETURN(self):
         self.code += 'return'
+    def g_RANGE(self):
+        self.code += 'range'
     def g_PARALLEL(self):
         self.code += 'parallel'
     def g_CONST(self):
