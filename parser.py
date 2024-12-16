@@ -439,10 +439,10 @@ def p_FuncDef(p):
                | DEF BType IDENTIFIER LPAREN RPAREN Block'''
     if len(p) == 8:
         # 函数定义，有形参
-        p[0] = ASTNode('FuncDef', p[2], [ASTNode('Ident', value=p[3]), p[5], p[7]])
+        p[0] = ASTNode('FuncDef', [p[2], ASTNode('Ident', value=p[3]), p[5], p[7]])
     else:
         # 函数定义，无形参
-        p[0] = ASTNode('FuncDef', p[2], [ASTNode('Ident', value=p[3]), p[6]])
+        p[0] = ASTNode('FuncDef', [p[2], ASTNode('Ident', value=p[3]), p[6]])
 
 # FuncFParams (函数形参列表)
 def p_FuncFParams(p):

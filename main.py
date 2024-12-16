@@ -29,9 +29,9 @@ result.build()
 
 print(result)
 
-generator = Generator(result)
-generator.generate()
-print(generator.code)
+# generator = Generator(result)
+# generator.generate()
+# print(generator.code)
 # python_code = generator.generate_code(result)
 # with open('out.py', 'w') as f:
 #     f.write(str(python_code))
