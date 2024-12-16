@@ -4,13 +4,13 @@ from util import ASTNode
 
 # 用于存储抽象语法树的工具类
 # class ASTNode:
-#     def __init__(self, type, children=None, value=None):
+#     def __init__(self, type, child_nodes=None, value=None):
 #         self.type = type  # 节点类型
-#         self.children = children if children else []  # 子节点
+#         self.child_nodes = child_nodes if child_nodes else []  # 子节点
 #         self.value = value  # 节点值
 #
 #     def __repr__(self):
-#         return f"ASTNode(type={self.type}, value={self.value}, children={self.children})"
+#         return f"ASTNode(type={self.type}, value={self.value}, child_nodes={self.child_nodes})"
 
 # 编译单元
 def p_CompUnit(p):
@@ -20,10 +20,10 @@ def p_CompUnit(p):
                 | MainFuncDef'''
     if len(p) == 4:
         # 包含声明、函数定义和主函数
-        p[0] = ASTNode('CompUnit', p[1].children + p[2].children + [p[3]])
+        p[0] = ASTNode('CompUnit', p[1].child_nodes + p[2].child_nodes + [p[3]])
     elif len(p) == 3:
         # 包含声明或函数定义，以及主函数
-        p[0] = ASTNode('CompUnit', p[1].children + [p[2]])
+        p[0] = ASTNode('CompUnit', p[1].child_nodes + [p[2]])
     else:
         # 仅包含主函数
         p[0] = ASTNode('CompUnit', [p[1]])
@@ -34,13 +34,13 @@ def p_Decls(p):
     if len(p) == 2:
         p[0] = ASTNode('Decls', [p[1]])
     else:
-        p[0] = ASTNode('Decls', [p[1]] + p[2].children)
+        p[0] = ASTNode('Decls', [p[1]] + p[2].child_nodes)
 
 # 声明
 def p_Decl(p):
     '''Decl : ConstDecl
             | VarDecl'''
-    p[0] = p[1]
+    p[0] = ASTNode('Decl', [p[1]])
 
 def p_ConstDecl(p):
     '''ConstDecl : CONST BType ConstDefList SEMICOLON'''
@@ -50,9 +50,9 @@ def p_ConstDefList(p):
     '''ConstDefList : ConstDef
                     | ConstDef COMMA ConstDefList'''
     if len(p) == 2:
-        p[0] = [p[1]]
+        p[0] = ASTNode('ConstDefList', [p[1]])
     else:
-        p[0] = [p[1]] + p[3]
+        p[0] = ASTNode('ConstDefList', [p[1]] + p[3].child_nodes)
 
 def p_ConstDef(p):
     '''ConstDef : IDENTIFIER ASSIGN ConstInitVal
@@ -77,9 +77,9 @@ def p_ConstInitValList(p):
     '''ConstInitValList : ConstInitVal
                         | ConstInitVal COMMA ConstInitValList'''
     if len(p) == 2:
-        p[0] = [p[1]]
+        p[0] = ASTNode('ConstInitValList', [p[1]])
     else:
-        p[0] = [p[1]] + p[3]
+        p[0] = ASTNode('ConstInitValList', [p[1]] + p[3].child_nodes)
 
 def p_ConstExp(p):
     '''ConstExp : AddExp'''
@@ -113,10 +113,10 @@ def p_VarDefList(p):
                   | VarDef COMMA VarDefList'''
     if len(p) == 2:
         # 单个变量定义
-        p[0] = [p[1]]
+        p[0] = ASTNode('VarDefList', [p[1]])
     else:
         # 多个变量定义
-        p[0] = [p[1]] + p[3]
+        p[0] = ASTNode('VarDefList', [p[1]] + p[3].child_nodes)
 
 # 变量定义
 def p_VarDef(p):
@@ -141,10 +141,10 @@ def p_ArrayDimensions(p):
                        | ArrayDimensions LBRACKET ConstExp RBRACKET'''
     if len(p) == 4:
         # 单维数组 `[ConstExp]`
-        p[0] = ASTNode('ArrayDimensions', children=[p[2]])
+        p[0] = ASTNode('ArrayDimensions', child_nodes=[p[2]])
     else:
         # 多维数组 `[ConstExp][ConstExp]...`
-        p[0] = ASTNode('ArrayDimensions', children=p[1].children + [p[3]])
+        p[0] = ASTNode('ArrayDimensions', child_nodes=p[1].child_nodes + [p[3]])
 
 # 变量初值
 def p_InitVal(p):
@@ -161,21 +161,21 @@ def p_InitValList(p):
     '''InitValList : InitVal
                    | InitVal COMMA InitValList'''
     if len(p) == 2:
-        p[0] = [p[1]]
+        p[0] = ASTNode('InitValList', [p[1]])
     else:
-        p[0] = [p[1]] + p[3]
+        p[0] = ASTNode('InitValList', [p[1]] + p[3].child_nodes)
 
 # 表达式
 def p_Exp(p):
     '''Exp : AddExp'''
-    p[0] = p[1]
+    p[0] = ASTNode('Exp', [p[1]])
     
 def p_LOrExp(p):
     '''LOrExp : LAndExp
               | LOrExp LOGICALOR LAndExp'''
     if len(p) == 2:
         # 单个逻辑与表达式
-        p[0] = p[1]
+        p[0] = ASTNode('LOrExp', [p[1]])
     else:
         # 逻辑或运算
         p[0] = ASTNode('LOrExp', [p[1], ASTNode('Op', value=p[2]), p[3]])
@@ -185,7 +185,7 @@ def p_LAndExp(p):
                | LAndExp LOGICALAND EqExp'''
     if len(p) == 2:
         # 单个相等性表达式
-        p[0] = p[1]
+        p[0] = ASTNode('LAndExp', [p[1]])
     else:
         # 逻辑与运算
         p[0] = ASTNode('LAndExp', [p[1], ASTNode('Op', value=p[2]), p[3]])
@@ -196,7 +196,7 @@ def p_AddExp(p):
               | AddExp PLUS MulExp
               | AddExp MINUS MulExp'''
     if len(p) == 2:
-        p[0] = p[1]
+        p[0] = ASTNode('AddExp', [p[1]])
     else:
         p[0] = ASTNode('AddExp', [p[1], ASTNode('Op', value=p[2]), p[3]])
 
@@ -207,7 +207,7 @@ def p_MulExp(p):
               | MulExp DIVIDE UnaryExp
               | MulExp MOD UnaryExp'''
     if len(p) == 2:
-        p[0] = p[1]
+        p[0] = ASTNode('MulExp', [p[1]])
     else:
         p[0] = ASTNode('MulExp', [p[1], ASTNode('Op', value=p[2]), p[3]])
 
@@ -217,7 +217,7 @@ def p_EqExp(p):
              | EqExp EQUAL RelExp
              | EqExp NOTEQUAL RelExp'''
     if len(p) == 2:
-        p[0] = p[1]
+        p[0] = ASTNode('EqExp', [p[1]])
     else:
         p[0] = ASTNode('EqExp', [p[1], ASTNode('Op', value=p[2]), p[3]])
 
@@ -229,7 +229,7 @@ def p_RelExp(p):
               | RelExp GREATER AddExp
               | RelExp GREATEREQUAL AddExp'''
     if len(p) == 2:
-        p[0] = p[1]
+        p[0] = ASTNode('RelExp', [p[1]])
     else:
         p[0] = ASTNode('RelExp', [p[1], ASTNode('Op', value=p[2]), p[3]])
 
@@ -239,9 +239,9 @@ def p_UnaryExp(p):
                 | IDENTIFIER LPAREN FuncRParams RPAREN
                 | UnaryOp UnaryExp'''
     if len(p) == 2:
-        p[0] = p[1]
+        p[0] = ASTNode('UnaryExp', [p[1]])
     elif len(p) == 5:
-        p[0] = ASTNode('FuncCall', [ASTNode('Ident', value=p[1]), p[3]])
+        p[0] = ASTNode('UnaryExp', [ASTNode('Ident', value=p[1]), p[3]])
     else:
         p[0] = ASTNode('UnaryExp', [p[1], p[2]])
 
@@ -266,7 +266,7 @@ def p_PrimaryExp(p):
         p[0] = ASTNode('PrimaryExp', [p[2]])
     elif p.slice[1].type == 'LVal':
         # 左值表达式
-        p[0] = p[1]
+        p[0] = ASTNode('PrimaryExp', [p[1]])
     elif p.slice[1].type == 'TRUE':
         # 布尔常量 true
         p[0] = ASTNode('BoolConst', value=True)
@@ -333,7 +333,7 @@ def p_Stmt(p):
         p[0] = ASTNode('EmptyStmt')
     elif len(p) == 2:
         # Block
-        p[0] = p[1]
+        p[0] = ASTNode('BlockStmt', [p[1]])
     elif len(p) == 8 and p[1] == "if":
         # IF '(' Cond ')' Stmt ELSE Stmt
         p[0] = ASTNode('IfStmt', [p[3], p[5], p[7]])
@@ -400,31 +400,28 @@ def p_PRINTFParams(p):
     '''PRINTFParams : COMMA Exp
                     | COMMA Exp PRINTFParams'''
     if len(p) == 3:
-        p[0] = [p[2]]
+        p[0] = ASTNode('PRINTFParams', [p[2]])
     else:
-        p[0] = [p[2]] + p[3]
-
-def p_PRINTFParams_empty(p):
-    '''PRINTFParams : '''
-    p[0] = []
+        p[0] = ASTNode('PRINTFParams', [p[2]] + p[3].child_nodes)
 
 # 并行语句的形参部分
 def p_ParallelIndentList(p):
     '''ParallelIndentList : IDENTIFIER
-                          | ParallelIndentList COMMA IDENTIFIER'''
+                          | IDENTIFIER COMMA ParallelIndentList'''
     if len(p) == 2:
-        p[0] = [ASTNode('Ident', value=p[1])]
+        p[0] = ASTNode('ParallelIndentList', [ASTNode('Ident', value=p[1])])
     else:
-        p[0] = p[1] + [ASTNode('Ident', value=p[3])]
+        print(f'{p[3]}')
+        p[0] = ASTNode('ParallelIndentList', [ASTNode('Ident', value=p[1])] + p[3].child_nodes)
 
 # 并行语句的实参部分
 def p_ParallelRealList(p):
     '''ParallelRealList : Exp
-                        | ParallelRealList COMMA Exp'''
+                        | Exp COMMA ParallelRealList'''
     if len(p) == 2:
-        p[0] = [p[1]]
+        p[0] = ASTNode('ParallelRealList', [p[1]])
     else:
-        p[0] = p[1] + [p[3]]
+        p[0] = ASTNode('ParallelRealList', [p[1]] + p[3].child_nodes)
        
 def p_FuncDefs(p):
     '''FuncDefs : FuncDef
@@ -434,7 +431,7 @@ def p_FuncDefs(p):
         p[0] = ASTNode('FuncDefs', [p[1]])
     else:
         # 多个函数定义
-        p[0] = ASTNode('FuncDefs', [p[1]] + p[2].children)
+        p[0] = ASTNode('FuncDefs', [p[1]] + p[2].child_nodes)
 
 # FuncDef (函数定义)
 def p_FuncDef(p):
@@ -452,9 +449,9 @@ def p_FuncFParams(p):
     '''FuncFParams : FuncFParam
                    | FuncFParam COMMA FuncFParams'''
     if len(p) == 2:
-        p[0] = [p[1]]
+        p[0] = ASTNode('FuncFParams', [p[1]])
     else:
-        p[0] = [p[1]] + p[3]
+        p[0] = ASTNode('FuncFParams', [p[1]] + p[3].child_nodes)
 
 # FuncFParam (单个形参)
 def p_FuncFParam(p):
@@ -468,10 +465,10 @@ def p_FuncRParams(p):
                    | Exp COMMA FuncRParams'''
     if len(p) == 2:
         # 单个参数
-        p[0] = [p[1]]
+        p[0] = ASTNode('FuncRParams', [p[1]])
     else:
         # 多个参数
-        p[0] = [p[1]] + p[3]
+        p[0] = ASTNode('FuncRParams', [p[1]] + p[3].child_nodes)
 
 def p_Block(p):
     '''Block : LBRACE RBRACE
@@ -488,15 +485,15 @@ def p_BlockItems(p):
                   | BlockItem BlockItems'''
     if len(p) == 2:
         # 单个 BlockItem
-        p[0] = [p[1]]
+        p[0] = ASTNode('BlockItems', [p[1]])
     else:
         # 多个 BlockItem
-        p[0] = [p[1]] + p[2]
+        p[0] = ASTNode('BlockItems', [p[1]] + p[2].child_nodes)
 
 def p_BlockItem(p):
     '''BlockItem : Decl
                  | Stmt'''
-    p[0] = p[1]
+    p[0] = ASTNode('BlockItem', [p[1]])
 
 
 def p_Cond(p):
@@ -542,15 +539,15 @@ def format_ast(node, indent=0):
     if node.word_value is not None:
         result += f", value='{node.word_value}'"
     if len(node.child_nodes) > 0:
-        result += f", children=["
+        result += f", child_nodes=["
 
     # 递归打印子节点
     if isinstance(node.child_nodes, list) and node.child_nodes:
-        children_str = []
+        child_nodes_str = []
         for child in node.child_nodes:
             child_str = format_ast(child, indent + 1)  # 子节点递归缩进
-            children_str.append(child_str)
-        result += "\n" + ",\n".join(children_str) + f"\n{indent_str}]"
+            child_nodes_str.append(child_str)
+        result += "\n" + ",\n".join(child_nodes_str) + f"\n{indent_str}]"
     else:
         result += "]"  # 无子节点的情况
     result += ")"
