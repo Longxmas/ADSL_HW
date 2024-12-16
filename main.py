@@ -10,21 +10,10 @@ def execute_generated_code(generated_code):
         f.write(str(result))
 
 code = """
-def add(int x, int y) int {
+def int add(int x, int y) {
     return x + y;
 }
 int main() {
-  int a[3] = {1, 2, 3};
-  int b[3] = {4, 5, 6};
-  pipe int c[3];
-  parallel (x, y, z) in a, b, c {
-    z << add(x, y);
-  }
-  for i in range(3) {
-    int t;
-    t << c[i];
-    printf("%d\n", t);
-  }
   return 0;
 }
 """

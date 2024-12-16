@@ -20,10 +20,10 @@ def p_CompUnit(p):
                 | MainFuncDef'''
     if len(p) == 4:
         # 包含声明、函数定义和主函数
-        p[0] = ASTNode('CompUnit', p[1].child_nodes + p[2].child_nodes + [p[3]])
+        p[0] = ASTNode('CompUnit', [p[1], p[2], p[3]])
     elif len(p) == 3:
         # 包含声明或函数定义，以及主函数
-        p[0] = ASTNode('CompUnit', p[1].child_nodes + [p[2]])
+        p[0] = ASTNode('CompUnit', [p[1], p[2]])
     else:
         # 仅包含主函数
         p[0] = ASTNode('CompUnit', [p[1]])
