@@ -22,7 +22,6 @@ reserved = {
     'main': 'MAIN',
     'in': 'IN',
     'def': 'DEF',
-    'range': 'RANGE',
     'mutex': 'MUTEX',
     'pipe': 'PIPE',
 }
