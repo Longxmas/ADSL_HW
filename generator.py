@@ -7,6 +7,7 @@ class Generator:
         self.temp_code = ""     # 备份code
         self.parallel_code = ""
         self.parallel_cnt = 0
+        self.mutex_variables = []
 
     def generate(self):
         assert equals_NT(self.root_node, 'CompUnit')
@@ -14,7 +15,6 @@ class Generator:
         self.code += self.parallel_code
 
     def g_CompUnit(self, node: ASTNode):
-        self.code += 'package main\nimport \"fmt\"\n'
         for child in node.child_nodes:
             if equals_NT(child, 'Decls'):
                 self.g_Decls(child)
@@ -24,6 +24,12 @@ class Generator:
                 self.g_MainFuncDef(child)
             else:
                 raise RuntimeError("g_CompUnit fail")
+        if len(self.mutex_variables) == 0:
+            self.code = 'package main\nimport \"fmt\"\n' + self.code
+        else:
+            self.code = 'package main\nimport (\"fmt\"; \"sync\")\n' + self.code
+            for v in self.mutex_variables:
+                self.code += f"var {v} sync.Mutex\n"
 
     def g_Decls(self, node: ASTNode):
         for child in node.child_nodes:
@@ -522,13 +528,22 @@ class Generator:
             self.parallel_code += self.code
             self.code = self.temp_code
             # 生成code
+            # self.code += f"var wg_{self.parallel_cnt} sync.WaitGroup\n"
             self.code += "for _i := 0; _i < len("
             self.g_ParallelFirstLVal(children[1])
             self.code += f"); _i++ {{ go parallel_{self.parallel_cnt}("
             self.g_ParallelRealList(children[1])
-            self.code += f") }}"
-            self.g_NEWLINE()
+            self.code += f") }}\n"
+            # self.code += f"wg_{self.parallel_cnt}.Wait()\n"
             self.parallel_cnt += 1
+        elif equals_NT(node, 'MutexStmt'):
+            assert equals_T(children[0], 'Ident')
+            ident_str = children[0].word_value
+            self.mutex_variables.append(ident_str)
+            self.code += f"{ident_str}.Lock()\n"
+            assert equals_NT(children[1], 'Block')
+            self.g_Block(children[1])
+            self.code += f"{ident_str}.Unlock()\n"
         else:
             raise RuntimeError("g_Stmt fail")
 
@@ -606,6 +621,9 @@ class Generator:
         self.g_Ident(node.child_nodes[1])
         self.g_SPACE()
         assert equals_T(node.child_nodes[0], 'BType')
+        if self.get_type_prefix(node.child_nodes[0]) == 'pipe':
+            self.g_CHAN()
+            self.g_SPACE()
         self.g_BType(node.child_nodes[0])
 
     def g_FuncRParams(self, node: ASTNode):

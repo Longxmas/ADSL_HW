@@ -10,25 +10,11 @@ def execute_generated_code(generated_code):
         f.write(str(result))
 
 code = """
-def int add(int x, int y) {
-    if (x == y) {
-        return x * 2;
-    } else
-        return x + y;
-}
+int value1 = 0;
+mutex int value2 = 0;
+
 void main() {
-  int a[3] = {1, 2, 3};
-  int b[3] = {4, 5, 6};
-  pipe int c[3];
-  parallel (int x, int y, pipe int z) in a, b, c {
-    z << add(x, y);
-  }
-  int i;
-  for (i = 0; i < 3; i = i + 1) {
-    int t;
-    c[i] >> t;
-    printf("%d\n", t);
-  }
+
 }
 """
 # 词法分析
