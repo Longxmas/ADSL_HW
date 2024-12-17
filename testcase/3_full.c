@@ -3,8 +3,8 @@ int a = 4;
 int b = 5;
 float d = 3.14;
 bool x = false;
-float c[3] = {1.2, 1.3, 1.4};
-str name = "Alice";
+bool c[3] = {true, true, false};
+str name = "自带并行の语言！";
 
 // 函数定义与调用
 /* 注释的测试 */
@@ -13,6 +13,9 @@ def int sum(int x, int y) {
 }
 
 void main() {
+    // 字符串输出
+    printf("这是一个%s \n", name);
+
     // 控制流：条件判断
     if (a > 5) {
         printf("a is greater than 5");
@@ -34,9 +37,10 @@ void main() {
 
     printf("\n测试第二种for循环: for x in\n");
     for i in c {
-        printf("i:%f, ", i);
+        printf("i:%t, ", i);
     }
 
+    printf("\n");
     int result = sum(5, 8);
     printf("The sum is: %d\n", result);
 
