@@ -295,7 +295,7 @@ def p_LVal(p):
 
 # 主函数定义
 def p_MainFuncDef(p):
-    '''MainFuncDef : INT MAIN LPAREN RPAREN Block'''
+    '''MainFuncDef : VOID MAIN LPAREN RPAREN Block'''
     p[0] = ASTNode('MainFuncDef', [p[5]])
 
 # 语句
