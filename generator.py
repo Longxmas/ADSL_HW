@@ -513,7 +513,9 @@ class Generator:
             self.parallel_code += self.code
             self.code = self.temp_code
             # 生成code
-            self.code += f"for _i"
+            self.code += f"for _i := 0; _i < len("
+            self.code += f"go parallel_{self.parallel_cnt}("
+            self.g_FuncRParams()
             self.parallel_cnt += 1
         else:
             raise RuntimeError("g_Stmt fail")
