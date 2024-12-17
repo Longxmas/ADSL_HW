@@ -5,7 +5,7 @@ void main() {
     int arr[3] = {1, 2, 3};
     pipe int c[3];
 
-parallel (int x, pipe int z) in a, b, c {
+parallel (int x, pipe int z) in arr, c {
     int i;
     for (i = 0; i < 10000; i = i + 1) {
         value1 = value1 + 1;

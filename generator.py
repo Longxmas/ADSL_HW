@@ -27,9 +27,10 @@ class Generator:
         if len(self.mutex_variables) == 0:
             self.code = 'package main\nimport \"fmt\"\n' + self.code
         else:
-            self.code = 'package main\nimport (\"fmt\"; \"sync\")\n' + self.code
+            head = 'package main\nimport (\"fmt\"; \"sync\")\n'
             for v in self.mutex_variables:
-                self.code += f"var {v} sync.Mutex\n"
+                head += f"var {v} sync.Mutex\n"
+            self.code = head + self.code
 
     def g_Decls(self, node: ASTNode):
         for child in node.child_nodes:
@@ -536,14 +537,6 @@ class Generator:
             self.code += f") }}\n"
             # self.code += f"wg_{self.parallel_cnt}.Wait()\n"
             self.parallel_cnt += 1
-        elif equals_NT(node, 'MutexStmt'):
-            assert equals_T(children[0], 'Ident')
-            ident_str = children[0].word_value
-            self.mutex_variables.append(ident_str)
-            self.code += f"{ident_str}.Lock()\n"
-            assert equals_NT(children[1], 'Block')
-            self.g_Block(children[1])
-            self.code += f"{ident_str}.Unlock()\n"
         else:
             raise RuntimeError("g_Stmt fail")
 
@@ -637,19 +630,31 @@ class Generator:
                 raise RuntimeError("g_FuncRParams fail")
 
     def g_Block(self, node: ASTNode):
-        self.g_LBRACE()
-        self.g_NEWLINE()
-        if equals_NT(node.child_nodes[0], 'BlockItems'):
-            self.g_BlockItems(node.child_nodes[0])
-        self.g_RBRACE()
-        self.g_NEWLINE()
+        children = node.child_nodes
+        if len(children) == 0:
+            self.g_LBRACE()
+            self.g_RBRACE()
+            self.g_NEWLINE()
+        elif equals_NT(children[0], 'BlockItems'):
+            self.g_LBRACE()
+            self.g_NEWLINE()
+            self.g_BlockItems(children[0])
+            self.g_RBRACE()
+            self.g_NEWLINE()
+        else:
+            assert equals_T(children[0], 'Ident')
+            ident_str = children[0].word_value
+            self.mutex_variables.append(ident_str)
+            self.code += f"{ident_str}.Lock()\n"
+            assert equals_NT(children[1], 'BlockItems')
+            self.g_BlockItems(children[1])
+            self.code += f"{ident_str}.Unlock()\n"
 
     def g_BlockItems(self, node: ASTNode):
         for child in node.child_nodes:
+            assert equals_NT(child, 'BlockItem')
             if equals_NT(child, 'BlockItem'):
                 self.g_BlockItem(child)
-            else:
-                raise RuntimeError("g_BlockItems fail")
 
     def g_BlockItem(self, node: ASTNode):
         if equals_NT(node.child_nodes[0], 'Decl'):
