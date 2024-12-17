@@ -2,3 +2,6 @@
 __pycache__/
 parselog.txt
 parsetab.py
+code_input.p
+code_output.go
+output.txt
