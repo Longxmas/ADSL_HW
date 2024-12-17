@@ -38,10 +38,8 @@ fmt.Printf("\n")
 }
 func parallel_1 (i int, row [10]float32, r chan bool) {
 var j int
-var result float32 = 0
 for j = 0; j < 10; j = j + 1 {
-result = result + row[j] * x[j]
+y[i] = y[i] + row[j] * x[j]
 }
-y[i] = result
 r <- true
 }

@@ -36,11 +36,9 @@ void main() {
 
     parallel (int i, float row[10], pipe bool r) in index, A, ret {
         int j;
-        float result = 0;
         for (j = 0; j < 10; j = j + 1) {
-            result = result + row[j] * x[j];
+            y[i] = y[i] + row[j] * x[j];
         }
-        y[i] = result;
         r << true;
     }
 
