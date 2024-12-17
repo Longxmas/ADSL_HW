@@ -444,7 +444,7 @@ class Generator:
                 self.g_SPACE()
                 self.g_Ident(children[0])
                 self.g_SPACE()
-                self.g_INFER_ASSIGN()
+                self.g_ASSIGN()
                 self.g_SPACE()
                 self.g_RANGE()
                 self.g_SPACE()
@@ -728,38 +728,8 @@ class Generator:
         self.code += '}'
     def g_ASSIGN(self):
         self.code += '='
-    def g_PLUS(self):
-        self.code += '+'
-    def g_MINUS(self):
-        self.code += '-'
-    def g_TIMES(self):
-        self.code += '*'
-    def g_DIVIDE(self):
-        self.code += '/'
-    def g_MOD(self):
-        self.code += '%'
-    def g_EQUAL(self):
-        self.code += '=='
-    def g_NOTEQUAL(self):
-        self.code += '!='
-    def g_LESS(self):
-        self.code += '<'
-    def g_LESSEQUAL(self):
-        self.code += '<='
-    def g_GREATER(self):
-        self.code += '>'
-    def g_GREATEREQUAL(self):
-        self.code += '>='
-    def g_LOGICALOR(self):
-        self.code += '||'
-    def g_LOGICALAND(self):
-        self.code += '&&'
-    def g_NOT(self):
-        self.code += '!'
     def g_SHIFT(self):
         self.code += '<-'
-    def g_INFER_ASSIGN(self):
-        self.code += ':='
 
     def g_FUNC(self):
         self.code += 'func'
