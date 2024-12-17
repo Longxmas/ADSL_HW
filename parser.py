@@ -436,10 +436,22 @@ def p_FuncFParams(p):
     else:
         p[0] = ASTNode('FuncFParams', [p[1]] + p[3].child_nodes)
 
-# FuncFParam (单个形参)
+# FuncFParam (单个形参) 可以是普通变量、一维数组或二维数组
 def p_FuncFParam(p):
-    '''FuncFParam : BType IDENTIFIER'''
-    p[0] = ASTNode('FuncFParam', [p[1], ASTNode('Ident', value=p[2])])
+    '''FuncFParam : BType IDENTIFIER
+                  | BType IDENTIFIER LBRACKET RBRACKET
+                  | BType IDENTIFIER LBRACKET RBRACKET LBRACKET ConstExp RBRACKET
+                  '''
+    # 处理普通变量
+    if len(p) == 3:
+        p[0] = ASTNode('FuncFParam', [p[1], ASTNode('Ident', value=p[2])])
+    # 处理一维数组
+    elif len(p) == 5 and p[3] == '[' and p[4] == ']':
+        p[0] = ASTNode('FuncFParam', [p[1], ASTNode('Ident', value=p[2])])
+    # 处理二维数组
+    elif len(p) == 8 and p[3] == '[' and p[4] == ']' and p[5] == '[' and p[7] == ']':
+        p[0] = ASTNode('FuncFParam', [p[1], ASTNode('Ident', value=p[2]), p[6]])
+
 
 
 # FuncRParams （函数实参）

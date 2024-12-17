@@ -1,6 +1,3 @@
-int value1 = 0;
-int value2 = 0;
-
 void main() {
     int index[2] = {0, 1};   // 线程编号
     pipe bool ret[2];        // 用于返回数据，同时阻塞主线程
@@ -15,8 +12,12 @@ void main() {
     float x[3] = {1.0, 1.0, 1.0};                         // 3x1向量
     float b[2] = {1.0, 1.0};                              // 常数向量
     float y[2] = {0.0, 0.0};                              // 结果向量
-    
-    parallel (int x, int row[]) in index, A {
+
+    parallel (int x, int[3] row) in index, A {
+        int c0 = row[0];
+        int c1 = row[1];
+        int c2 = row[2];
+        y[x] = c1 * r[0] + c2 * r[1] + c3 * r[2];
     }
 
     // 等待所有线程完成
