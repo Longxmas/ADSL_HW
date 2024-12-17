@@ -674,7 +674,17 @@ class Generator:
     # 以下是终结符
     ################################################################
     def g_BType(self, node: ASTNode):
-        self.code += node.word_value.split(' ')[-1]
+        btype = node.word_value.split(' ')[-1]
+        if btype == 'int':
+            self.code += 'int'
+        elif btype == 'float':
+            self.code += 'float32'
+        elif btype == 'bool':
+            self.code += 'bool'
+        elif btype == 'str':
+            self.code += 'string'
+        else:
+            raise RuntimeError("g_BType fail")
     def g_Op(self, node: ASTNode):
         self.code += node.word_value
     def g_UnaryOp(self, node: ASTNode):

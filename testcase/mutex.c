@@ -7,8 +7,9 @@ void main() {
     pipe int   p12;     // 线程1向线程2发送int
     pipe float p23;     // 线程2向线程3发送float
     pipe bool  p31;     // 线程3向线程1发送bool
+    pipe bool  ret;     // 用于返回数据，同时阻塞主线程
 
-
+    parallel (int x, pipe r) in index,
 
 
     pipe int c[3];
