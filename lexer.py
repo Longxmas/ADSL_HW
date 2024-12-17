@@ -32,7 +32,7 @@ tokens = [
     'LPAREN', 'RPAREN', 'LBRACE', 'RBRACE', 'LBRACKET', 'RBRACKET',
     'SEMICOLON', 'COMMA', 'ASSIGN', 'EQUAL', 'NOTEQUAL', 'LESS', 'LESSEQUAL',
     'GREATER', 'GREATEREQUAL', 'LOGICALAND', 'LOGICALOR', 'NOT', 'FORMATSTRING',
-    'FLOATCONST', 'STRCONST', 'LSHIFT'
+    'FLOATCONST', 'STRCONST', 'LSHIFT', 'RSHIFT'
 ] + list(reserved.values())
 
 # 字面值
@@ -60,6 +60,7 @@ t_LOGICALAND = r'&&'
 t_LOGICALOR = r'\|\|'
 t_NOT = r'!'
 t_LSHIFT = r'<<'
+t_RSHIFT = r'>>'
 
 # 标识符
 def t_IDENTIFIER(t):

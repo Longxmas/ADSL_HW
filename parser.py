@@ -316,6 +316,7 @@ def p_Stmt(p):
             | RETURN Exp SEMICOLON
             | RETURN SEMICOLON
             | Exp LSHIFT Exp SEMICOLON
+            | Exp RSHIFT Exp SEMICOLON
             | LVal ASSIGN GETINT LPAREN RPAREN SEMICOLON
             | PRINTF LPAREN STRCONST RPAREN SEMICOLON
             | PRINTF LPAREN STRCONST PRINTFParams RPAREN SEMICOLON
@@ -326,6 +327,9 @@ def p_Stmt(p):
     elif len(p) == 5 and p[2] == '<<':
         # Exp '<<' Exp ';'
         p[0] = ASTNode('ShiftLeftStmt', [p[1], p[3]])
+    elif len(p) == 5 and p[2] == '>>':
+        # Exp '>>' Exp ';'
+        p[0] = ASTNode('ShiftRightStmt', [p[1], p[3]])
     elif len(p) == 3 and p[1] != ';':
         # Exp ';'
         p[0] = ASTNode('ExpStmt', [p[1]])

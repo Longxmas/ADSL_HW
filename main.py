@@ -25,6 +25,7 @@ int main() {
   pipe int c[3];
   parallel (x, y, z) in a, b, c {
     z << add(x, y);
+    z >> add(x, y);
   }
   int a2[3] = {0, 1, 2};
   for i in a2 {
