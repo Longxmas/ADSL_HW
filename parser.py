@@ -381,7 +381,7 @@ def p_Stmt(p):
         p[0] = ASTNode('ReturnStmt', [p[2]])
     elif len(p) == 3 and p[1] == 'return':
         # 'return' ';'
-        p[0] = ASTNode('ReturnStmt')
+        p[0] = ASTNode('ReturnStmt', [])
     elif len(p) == 7 and p[1] == "scanf":
         # 'scanf' '(' STRCONST PRINTFParams ')' ';'
         p[0] = ASTNode('ScanfStmt', [ASTNode('STRCONST', value=p[3]), p[4]])
