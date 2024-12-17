@@ -4,15 +4,35 @@ class Generator:
     def __init__(self, root_node: ASTNode):
         self.root_node = root_node
         self.code = ""
-        self.temp_code = ""     # 备份code
-        self.parallel_code = ""
         self.parallel_cnt = 0
-        self.mutex_variables = []
+        self.parallel_queue = []    # parallel块节点，最后再生成
+        self.mutex_variables = []   # 用到的互斥变量
 
     def generate(self):
         assert equals_NT(self.root_node, 'CompUnit')
         self.g_CompUnit(self.root_node)
-        self.code += self.parallel_code
+        # 生成parallel的函数
+        cnt = 0
+        while len(self.parallel_queue) > 0:
+            cnt += 1
+            node = self.parallel_queue.pop(0)
+            assert equals_NT(node, 'ParallelStmt')
+            children = node.child_nodes
+            # 生成parallel_code
+            self.code += f"func parallel_{cnt} ("
+            assert equals_NT(children[0], 'FuncFParams')
+            self.g_FuncFParams(children[0])
+            self.code += ") "
+            assert equals_NT(children[2], 'Block')
+            self.g_Block(children[2])
+        # 生成互斥变量
+        if len(self.mutex_variables) == 0:
+            self.code = 'package main\nimport \"fmt\"\n' + self.code
+        else:
+            head = 'package main\nimport (\"fmt\"; \"sync\")\n'
+            for v in self.mutex_variables:
+                head += f"var {v} sync.Mutex\n"
+            self.code = head + self.code
 
     def g_CompUnit(self, node: ASTNode):
         for child in node.child_nodes:
@@ -24,13 +44,6 @@ class Generator:
                 self.g_MainFuncDef(child)
             else:
                 raise RuntimeError("g_CompUnit fail")
-        if len(self.mutex_variables) == 0:
-            self.code = 'package main\nimport \"fmt\"\n' + self.code
-        else:
-            head = 'package main\nimport (\"fmt\"; \"sync\")\n'
-            for v in self.mutex_variables:
-                head += f"var {v} sync.Mutex\n"
-            self.code = head + self.code
 
     def g_Decls(self, node: ASTNode):
         for child in node.child_nodes:
@@ -520,26 +533,14 @@ class Generator:
             self.g_RPAREN()
             self.g_NEWLINE()
         elif equals_NT(node, 'ParallelStmt'):
-            # 生成parallel_code
-            self.temp_code = self.code
-            self.code = ""
-            self.code += f"func parallel_{self.parallel_cnt} ("
-            assert equals_NT(children[0], 'FuncFParams')
-            self.g_FuncFParams(children[0])
-            self.code += ") "
-            assert equals_NT(children[2], 'Block')
-            self.g_Block(children[2])
-            self.parallel_code += self.code
-            self.code = self.temp_code
-            # 生成code
-            # self.code += f"var wg_{self.parallel_cnt} sync.WaitGroup\n"
+            self.parallel_cnt += 1
             self.code += "for _i := 0; _i < len("
             self.g_ParallelFirstLVal(children[1])
             self.code += f"); _i++ {{ go parallel_{self.parallel_cnt}("
             self.g_ParallelRealList(children[1])
             self.code += f") }}\n"
-            # self.code += f"wg_{self.parallel_cnt}.Wait()\n"
-            self.parallel_cnt += 1
+
+            self.parallel_queue.append(node)
         else:
             raise RuntimeError("g_Stmt fail")
 
