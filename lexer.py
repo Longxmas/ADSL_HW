@@ -16,7 +16,7 @@ reserved = {
     'for': 'FOR',
     'break': 'BREAK',
     'continue': 'CONTINUE',
-    'getint': 'GETINT',
+    'scanf': 'SCANF',
     'printf': 'PRINTF',
     'parallel': 'PARALLEL',
     'main': 'MAIN',
