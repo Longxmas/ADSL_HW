@@ -535,6 +535,13 @@ class Generator:
                 self.g_PRINTFParams(children[1])
             self.g_RPAREN()
             self.g_NEWLINE()
+        elif equals_NT(node, 'ScanfStmt'):
+            self.code += 'fmt.Scanf'
+            self.g_LPAREN()
+            self.g_STRCONST(children[0])
+            self.g_PRINTFParams(children[1], True)
+            self.g_RPAREN()
+            self.g_NEWLINE()
         elif equals_NT(node, 'ParallelStmt'):
             self.parallel_cnt += 1
             self.code += "for _i := 0; _i < len("
@@ -557,11 +564,13 @@ class Generator:
         assert equals_NT(children[1], 'Exp')
         self.g_Exp(children[1])
 
-    def g_PRINTFParams(self, node: ASTNode):
+    def g_PRINTFParams(self, node: ASTNode, is_scanf=False):
         for child in node.child_nodes:
             if equals_NT(child, 'Exp'):
                 self.g_COMMA()
                 self.g_SPACE()
+                if is_scanf:
+                    self.g_ADDR()
                 self.g_Exp(child)
             else:
                 raise RuntimeError("g_PRINTFParams fail")
@@ -744,6 +753,8 @@ class Generator:
         self.code += '='
     def g_SHIFT(self):
         self.code += '<-'
+    def g_ADDR(self):
+        self.code += '&'
 
     def g_FUNC(self):
         self.code += 'func'
