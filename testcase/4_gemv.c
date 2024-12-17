@@ -10,9 +10,7 @@ void main() {
     int i;
 
     parallel (int i, float row[3], pipe bool r) in index, A, ret {
-        mutex m {
-            y[i] = row[0] * x[0] + row[1] * x[1] + row[2] * x[2];
-        }
+        y[i] = row[0] * x[0] + row[1] * x[1] + row[2] * x[2];
         r << true;
     }
 
