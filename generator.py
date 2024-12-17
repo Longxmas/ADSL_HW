@@ -588,7 +588,7 @@ class Generator:
         children = node.child_nodes
         self.g_FUNC()
         self.g_SPACE()
-        assert equals_T(children[0], 'BType')
+        assert equals_T(children[0], 'FuncBType')
         assert equals_T(children[1], 'Ident')
         self.g_Ident(children[1])
         self.g_LPAREN()
@@ -596,7 +596,8 @@ class Generator:
             self.g_FuncFParams(children[2])
         self.g_RPAREN()
         self.g_SPACE()
-        self.g_BType(children[0])
+        if children[0].word_value != 'void':
+            self.g_BType(children[0])
         self.g_SPACE()
         if equals_NT(children[2], 'Block'):
             self.g_Block(children[2])

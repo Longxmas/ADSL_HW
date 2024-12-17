@@ -99,6 +99,16 @@ def p_BType(p):
     elif len(p) == 3:
         p[0] = ASTNode('BType', value=p[1] + ' ' + p[2])
 
+# 基本类型
+def p_FuncBType(p):
+    '''FuncBType : INT
+                | BOOL
+                | FLOAT
+                | STR
+                | VOID'''
+    if len(p) == 2:
+        p[0] = ASTNode('FuncBType', value=p[1])
+
 # 变量声明
 def p_VarDecl(p):
     '''VarDecl : BType VarDefList SEMICOLON'''
@@ -314,7 +324,7 @@ def p_Stmt(p):
             | LVal LSHIFT Exp SEMICOLON
             | LVal RSHIFT Exp SEMICOLON
             | LVal RSHIFT SEMICOLON
-            | LVal ASSIGN GETINT LPAREN RPAREN SEMICOLON
+            | LVal ASSIGN SCANF LPAREN RPAREN SEMICOLON
             | PRINTF LPAREN STRCONST RPAREN SEMICOLON
             | PRINTF LPAREN STRCONST PRINTFParams RPAREN SEMICOLON
             | PARALLEL LPAREN FuncFParams RPAREN IN ParallelRealList Block'''
@@ -330,7 +340,7 @@ def p_Stmt(p):
     elif len(p) == 4 and p[2] == '>>':
         # Lval '>>' ';'
         p[0] = ASTNode('ShiftRightStmt', [p[1]])
-    elif len(p) == 3 and p[1] != ';':
+    elif len(p) == 3 and p[1] != ';' and p[1] != "return":
         # Exp ';'
         p[0] = ASTNode('ExpStmt', [p[1]])
     elif len(p) == 2 and p[1] == ';':
@@ -418,8 +428,8 @@ def p_FuncDefs(p):
 
 # FuncDef (函数定义)
 def p_FuncDef(p):
-    '''FuncDef : DEF BType IDENTIFIER LPAREN FuncFParams RPAREN  Block
-               | DEF BType IDENTIFIER LPAREN RPAREN Block'''
+    '''FuncDef : DEF FuncBType IDENTIFIER LPAREN FuncFParams RPAREN  Block
+               | DEF FuncBType IDENTIFIER LPAREN RPAREN Block'''
     if len(p) == 8:
         # 函数定义，有形参
         p[0] = ASTNode('FuncDef', [p[2], ASTNode('Ident', value=p[3]), p[5], p[7]])
