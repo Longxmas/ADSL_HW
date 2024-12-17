@@ -324,9 +324,9 @@ def p_Stmt(p):
             | LVal LSHIFT Exp SEMICOLON
             | LVal RSHIFT Exp SEMICOLON
             | LVal RSHIFT SEMICOLON
-            | LVal ASSIGN SCANF LPAREN RPAREN SEMICOLON
             | PRINTF LPAREN STRCONST RPAREN SEMICOLON
             | PRINTF LPAREN STRCONST PRINTFParams RPAREN SEMICOLON
+            | SCANF  LPAREN STRCONST PRINTFParams RPAREN SEMICOLON
             | PARALLEL LPAREN FuncFParams RPAREN IN ParallelRealList Block'''
     if len(p) == 5 and p[2] == '=':
         # LVal '=' Exp ';'
@@ -382,9 +382,9 @@ def p_Stmt(p):
     elif len(p) == 3 and p[1] == 'return':
         # 'return' ';'
         p[0] = ASTNode('ReturnStmt')
-    elif len(p) == 7 and p[2] == "=":
-        # LVal '=' 'getint' '(' ')' ';'
-        p[0] = ASTNode('GetIntStmt', [p[1]])
+    elif len(p) == 7 and p[1] == "scanf":
+        # 'scanf' '(' STRCONST PRINTFParams ')' ';'
+        p[0] = ASTNode('ScanfStmt', [ASTNode('STRCONST', value=p[3]), p[4]])
     elif len(p) == 6 and p[1] == "printf":
         # 'printf' '(' STRCONST ')' ';'
         p[0] = ASTNode('PrintfStmt', [ASTNode('STRCONST', value=p[3])])
