@@ -4,6 +4,7 @@ class Generator:
     def __init__(self, root_node: ASTNode):
         self.root_node = root_node
         self.code = ""
+        self.temp_code = ""     # 备份code
         self.parallel_code = ""
         self.parallel_cnt = 0
 
@@ -391,6 +392,13 @@ class Generator:
             self.g_SPACE()
             self.g_Exp(children[1])
             self.g_NEWLINE()
+        elif equals_NT(node, 'ShiftRightStmt'):
+            self.g_Exp(children[1])
+            self.g_SPACE()
+            self.g_RSHIFT()
+            self.g_SPACE()
+            self.g_Exp(children[0])
+            self.g_NEWLINE()
         elif equals_NT(node, 'ExpStmt'):
             self.g_Exp(children[0])
             self.g_NEWLINE()
@@ -493,13 +501,20 @@ class Generator:
             self.g_RPAREN()
             self.g_NEWLINE()
         elif equals_NT(node, 'ParallelStmt'):
-            self.parallel_code += f"func parallel_{self.parallel_cnt} ("
-            assert equals_NT(children[0], 'ParallelIndentList')
-            # self.g_ParallelIndentList(children[0])
-            self.parallel_code += ")"
+            # 生成parallel_code
+            self.temp_code = self.code
+            self.code = ""
+            self.code += f"func parallel_{self.parallel_cnt} ("
+            assert equals_NT(children[0], 'FuncFParams')
+            self.g_FuncFParams(children[0])
+            self.code += ")"
             assert equals_NT(children[2], 'Block')
-            # self
-
+            self.g_Block(children[2])
+            self.parallel_code += self.code
+            self.code = self.temp_code
+            # 生成code
+            self.code += f"for _i"
+            self.parallel_cnt += 1
         else:
             raise RuntimeError("g_Stmt fail")
 
@@ -685,6 +700,8 @@ class Generator:
         self.code += '!'
     def g_LSHIFT(self):
         self.code += '<-'
+    def g_RSHIFT(self):
+        self.code += '= <-'
     def g_INFER_ASSIGN(self):
         self.code += ':='
 
