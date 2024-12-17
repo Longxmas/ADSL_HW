@@ -7,9 +7,34 @@ void main() {
     pipe int   p12;     // 线程1向线程2发送int
     pipe float p23;     // 线程2向线程3发送float
     pipe bool  p31;     // 线程3向线程1发送bool
-    pipe bool  ret;     // 用于返回数据，同时阻塞主线程
+    pipe bool  ret[3];  // 用于返回数据，同时阻塞主线程
 
-    parallel (int x, pipe r) in index,
+    parallel (int x, pipe r) in index, ret {
+        if (x == 1) {
+            int send = 123;
+            bool receive;
+            p12 << send;
+            printf("线程1发送int: %d", send)
+            p32 >> receive;
+            printf("线程1接收bool: %v", receive)
+        } else {
+            if (x == 2) {
+                float send = 3.14;
+                int receive;
+                p23 << send;
+                printf("线程2发送float: %f", send)
+                p12 >> receive;
+                printf("线程2接收int: %d", receive)
+            } else {
+                bool send = true;
+                float receive;
+                p31 << send;
+                printf("线程3发送bool: %v", send)
+                p23 >> receive;
+                printf("线程3接收float: %f", receive)
+            }
+        }
+    }
 
 
     pipe int c[3];
