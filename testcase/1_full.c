@@ -36,8 +36,9 @@ void main() {
 
 
     printf("\n测试第二种for循环: for x in\n");
-    for i in c {
-        printf("i:%t, ", i);
+    bool boo;
+    for boo in c {
+        printf("boo:%t, ", boo);
     }
 
     printf("\n");
