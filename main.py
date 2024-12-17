@@ -21,7 +21,7 @@ def remove_comments(code):
 
 
 code = ""
-with open("code_input.p", 'r', encoding='utf-8') as f:
+with open("testcase/full.c", 'r', encoding='utf-8') as f:
     line = f.readline()
     while line:
         code += line
