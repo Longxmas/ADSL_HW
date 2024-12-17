@@ -359,7 +359,7 @@ class Generator:
             self.g_INTCONST(node.child_nodes[0])
         elif equals_T(node.child_nodes[0], 'FloatConst'):
             self.g_FLOATCONST(node.child_nodes[0])
-        elif equals_T(node.child_nodes[0], 'STRCONST'):
+        elif equals_T(node.child_nodes[0], 'StrConst'):
             self.g_STRCONST(node.child_nodes[0])
         elif equals_NT(node.child_nodes[0], 'BoolConst'):
             self.g_BoolConst(node.child_nodes[0])

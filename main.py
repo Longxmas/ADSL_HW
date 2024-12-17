@@ -21,7 +21,7 @@ def remove_comments(code):
 
 
 code = ""
-with open("code_input.p", 'r') as f:
+with open("code_input.p", 'r', encoding='utf-8') as f:
     line = f.readline()
     while line:
         code += line
@@ -47,7 +47,7 @@ print("语法分析成功")
 generator = Generator(result)
 generator.generate()
 # print(generator.code)
-with open("code_output.go", "w") as f:
+with open("code_output.go", "w", encoding='utf-8') as f:
     f.write(generator.code)
 print("代码生成成功")
 

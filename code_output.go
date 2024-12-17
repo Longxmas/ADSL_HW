@@ -1,27 +1,20 @@
 package main
-import ("fmt"; "sync")
-var m1 sync.Mutex
-var value1 int = 0
-var value2 int = 0
+import "fmt"
+var a int = 4
+var b float = 3.14
+var c [5]int = [5]int{1, 2, 3, 4, 5}
+var name str = "Alice"
+func sum(x int, y int) int {
+return x + y
+}
 func main() {
-var arr [3]int = [3]int{1, 2, 3}
-var c [3]chan int
-for _i := 0; _i < 3; _i++ { c[_i] = make(chan int) }
-for _i := 0; _i < len(arr); _i++ { go parallel_0(arr[_i], c[_i]) }
-var i int
-for i = 0; i < 3; i = i + 1 {
-<- c[i]
+if a > 5 {
+fmt.Printf("a is greater than 5")
+} else {
+if a == 5 {
+fmt.Printf("a is equal to 5")
+} else {
+fmt.Printf("a is less than 5")
 }
-fmt.Printf("value1: %d\n", value1)
-fmt.Printf("value2: %d\n", value2)
 }
-func parallel_0 (x int, z chan int) {
-var i int
-for i = 0; i < 10000; i = i + 1 {
-value1 = value1 + 1
-m1.Lock()
-value2 = value2 + 1
-m1.Unlock()
-}
-z <- 0
 }

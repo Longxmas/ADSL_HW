@@ -1,24 +1,27 @@
-int value1 = 0;
-int value2 = 0;
+// 变量声明和赋值
+int a = 4;
+float b = 3.14;
+int c[5] = {1,2,3,4,5};
+str name = "Alice";
+
+// 函数定义与调用
+/* 注释的测试 */
+def int sum(int x, int y) {
+    return x + y;
+}
 
 void main() {
-    int arr[3] = {1, 2, 3};
-    pipe int c[3];
-
-parallel (int x, pipe int z) in arr, c {
-    int i;
-    for (i = 0; i < 10000; i = i + 1) {
-        value1 = value1 + 1;
-        mutex m1 {
-            value2 = value2 + 1;
+    // 控制流：条件判断
+    if (a > 5) {
+        printf("a is greater than 5");
+    } else {
+        if (a == 5) {
+            printf("a is equal to 5");
+        } else {
+            printf("a is less than 5");
         }
     }
-    z << 0;
-}
-    int i;
-    for (i = 0; i < 3; i = i + 1) {
-        c[i] >>;
-    }
-    printf("value1: %d\n", value1);
-    printf("value2: %d\n", value2);
+
+    // 循环：for 循环
+
 }
