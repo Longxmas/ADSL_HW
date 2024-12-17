@@ -40,11 +40,11 @@ parallel (int x, pipe int z) in arr, c {
 }
     int i;
     for (i = 0; i < 3; i = i + 1) {
-        int t;
-        c[i] >> t;
+        c[i] >>;
     }
     printf("value1: %d\n", value1);
     printf("value2: %d\n", value2);
+  x >>;
 }
 """
 
