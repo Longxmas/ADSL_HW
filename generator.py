@@ -70,7 +70,7 @@ class Generator:
         assert equals_T(children[0], 'Ident')
         self.g_Ident(children[0])
         self.g_SPACE()
-        if self.get_type_prefix(btype) is not None:
+        if get_type_prefix(btype) is not None:
             raise RuntimeError("mutex/pipe cannot be const")
         if len(children) == 2:      # 非数组
             self.g_BType(btype)
@@ -161,7 +161,7 @@ class Generator:
         self.g_Ident(ident)
         self.g_SPACE()
         if len(children) == 1:      # int x
-            if self.get_type_prefix(btype) == 'pipe':
+            if get_type_prefix(btype) == 'pipe':
                 self.g_CHAN()
                 self.g_SPACE()
                 self.g_BType(btype)
@@ -188,7 +188,7 @@ class Generator:
         elif equals_NT(children[1], 'ArrayDimensions'): # int x[a][b]
             array_dim = children[1]
             self.g_ArrayDimensions(array_dim)
-            if self.get_type_prefix(btype) == 'pipe':
+            if get_type_prefix(btype) == 'pipe':
                 self.g_CHAN()
                 self.g_SPACE()
                 self.g_BType(btype)
@@ -393,18 +393,21 @@ class Generator:
             self.g_Exp(children[1])
             self.g_NEWLINE()
         elif equals_NT(node, 'ShiftLeftStmt'):
-            self.g_Exp(children[0])
+            self.g_LVal(children[0])
             self.g_SPACE()
-            self.g_LSHIFT()
+            self.g_SHIFT()
             self.g_SPACE()
             self.g_Exp(children[1])
             self.g_NEWLINE()
         elif equals_NT(node, 'ShiftRightStmt'):
-            self.g_Exp(children[1])
+            if len(children) == 2:
+                self.g_Exp(children[1])
+                self.g_SPACE()
+                self.g_ASSIGN()
+                self.g_SPACE()
+            self.g_SHIFT()
             self.g_SPACE()
-            self.g_RSHIFT()
-            self.g_SPACE()
-            self.g_Exp(children[0])
+            self.g_LVal(children[0])
             self.g_NEWLINE()
         elif equals_NT(node, 'ExpStmt'):
             self.g_Exp(children[0])
@@ -614,7 +617,7 @@ class Generator:
         self.g_Ident(node.child_nodes[1])
         self.g_SPACE()
         assert equals_T(node.child_nodes[0], 'BType')
-        if self.get_type_prefix(node.child_nodes[0]) == 'pipe':
+        if get_type_prefix(node.child_nodes[0]) == 'pipe':
             self.g_CHAN()
             self.g_SPACE()
         self.g_BType(node.child_nodes[0])
@@ -672,12 +675,6 @@ class Generator:
     ################################################################
     def g_BType(self, node: ASTNode):
         self.code += node.word_value.split(' ')[-1]
-    def get_type_prefix(self, node: ASTNode):
-        values = node.word_value.split(' ')
-        if len(values) == 1:
-            return None
-        else:
-            return values[0]
     def g_Op(self, node: ASTNode):
         self.code += node.word_value
     def g_UnaryOp(self, node: ASTNode):
@@ -689,7 +686,7 @@ class Generator:
     def g_FLOATCONST(self, node: ASTNode):
         self.code += str(node.word_value)
     def g_STRCONST(self, node: ASTNode):
-        self.code += f'\"{repr(node.word_value)[1:-1]}\"'
+        self.code += f'\"{node.word_value}\"'
     def g_BoolConst(self, node: ASTNode):
         self.code += node.word_value
     def g_TRUE(self):
@@ -749,10 +746,8 @@ class Generator:
         self.code += '&&'
     def g_NOT(self):
         self.code += '!'
-    def g_LSHIFT(self):
+    def g_SHIFT(self):
         self.code += '<-'
-    def g_RSHIFT(self):
-        self.code += '= <-'
     def g_INFER_ASSIGN(self):
         self.code += ':='
 
@@ -786,10 +781,15 @@ class Generator:
         self.code += 'make'
 
 
-
 # 是否是某个终结符
 def equals_T(node: ASTNode, word: str) -> bool:
     return node.is_terminal and node.word_type == word
 # 是否是某个非终结符
 def equals_NT(node: ASTNode, name: str) -> bool:
     return not node.is_terminal and node.node_type == name
+def get_type_prefix(node: ASTNode):
+    values = node.word_value.split(' ')
+    if len(values) == 1:
+        return None
+    else:
+        return values[0]
