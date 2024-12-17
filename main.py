@@ -1,6 +1,7 @@
 from lexer import lexer, lex_input
 from parser import parser, format_ast
 from generator import Generator
+import re
 
 def execute_generated_code(generated_code):
     local_vars = {}
@@ -9,28 +10,31 @@ def execute_generated_code(generated_code):
     with open('output.txt', 'w') as f:
         f.write(str(result))
 
+import re
+
+def remove_comments(code):
+    # 匹配 /* ... */ 的多行注释，并删除
+    code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)
+    # 匹配 // ... 的单行注释，并删除
+    code = re.sub(r'//.*$', '', code, flags=re.MULTILINE)
+    return code
+
+
 code = """
-def int add(int x, int y) {
-    if (x == y) {
-        return x * 2;
-    } else
-        return x + y;
-}
+int value1 = 0; /* vardef */
+int value2 = 0; // 互斥
+
 void main() {
-  int a[3] = {1, 2, 3};
-  int b[3] = {4, 5, 6};
-  pipe int c[3];
-  parallel (int x, int y, pipe int z) in a, b, c {
-    z << add(x, y);
-  }
-  int i;
-  for (i = 0; i < 3; i = i + 1) {
-    int t;
-    c[i] >> t;
-    printf("%d\n", t);
+
+  mutex a {
+    x = 1;
   }
 }
 """
+
+code = remove_comments(code)
+print('code = ', code)
+
 # 词法分析
 tokens = lex_input(code)
 # for t in tokens:
