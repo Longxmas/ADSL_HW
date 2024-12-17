@@ -17,6 +17,8 @@ for _, i = range index {
 fmt.Printf("Final result: y[0] = %f, y[1] = %f\n", y[0], y[1])
 }
 func parallel_0 (i int, row [3]float32, r chan bool) {
+m.Lock()
 y[i] = row[0] * x[0] + row[1] * x[1] + row[2] * x[2]
+m.Unlock()
 r <- true
 }

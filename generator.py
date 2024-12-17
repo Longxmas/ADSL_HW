@@ -613,14 +613,23 @@ class Generator:
                 raise RuntimeError("g_FuncFParams fail")
 
     def g_FuncFParam(self, node: ASTNode):
-        assert equals_T(node.child_nodes[1], 'Ident')
-        self.g_Ident(node.child_nodes[1])
+        children = node.child_nodes
+        assert equals_T(children[1], 'Ident')
+        self.g_Ident(children[1])
         self.g_SPACE()
-        assert equals_T(node.child_nodes[0], 'BType')
-        if get_type_prefix(node.child_nodes[0]) == 'pipe':
+        if len(children) >= 3:
+            self.g_LBRACKET()
+            self.g_ConstExp(children[2])
+            self.g_RBRACKET()
+        if len(children) == 4:
+            self.g_LBRACKET()
+            self.g_ConstExp(children[3])
+            self.g_RBRACKET()
+        assert equals_T(children[0], 'BType')
+        if get_type_prefix(children[0]) == 'pipe':
             self.g_CHAN()
             self.g_SPACE()
-        self.g_BType(node.child_nodes[0])
+        self.g_BType(children[0])
 
     def g_FuncRParams(self, node: ASTNode):
         for index, child in enumerate(node.child_nodes):
