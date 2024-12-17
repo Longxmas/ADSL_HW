@@ -460,7 +460,7 @@ def p_Block(p):
         # 包含多个 BlockItem 的 Block
         p[0] = ASTNode('Block', [p[2]])
     elif len(p) == 6 and p[1] == 'mutex':
-        p[0] = ASTNode('Mutex Block', [ASTNode('Ident', value=p[2]), p[4]])
+        p[0] = ASTNode('MutexBlock', [ASTNode('Ident', value=p[2]), p[4]])
 
 def p_BlockItems(p):
     '''BlockItems : BlockItem
