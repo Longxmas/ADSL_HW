@@ -320,7 +320,7 @@ def p_Stmt(p):
             | LVal ASSIGN GETINT LPAREN RPAREN SEMICOLON
             | PRINTF LPAREN STRCONST RPAREN SEMICOLON
             | PRINTF LPAREN STRCONST PRINTFParams RPAREN SEMICOLON
-            | PARALLEL LPAREN ParallelIndentList RPAREN IN ParallelRealList Block'''
+            | PARALLEL LPAREN FuncFParams RPAREN IN FuncRParams Block'''
     if len(p) == 5 and p[2] == '=':
         # LVal '=' Exp ';'
         p[0] = ASTNode('AssignStmt', [p[1], p[3]])
@@ -382,7 +382,7 @@ def p_Stmt(p):
         # 'printf' '(' STRCONST PRINTFParams ')' ';'
         p[0] = ASTNode('PrintfStmt', [ASTNode('STRCONST', value=p[3]), p[4]])
     elif len(p) == 8 and p[1] == "parallel":
-        # 'parallel' '(' ParallelIndentList ')' 'in' ParallelRealList Block
+        # 'parallel' '(' FuncFParams ')' 'in' ParallelRealList Block
         p[0] = ASTNode('ParallelStmt', [p[3], p[6], p[7]])
 
 def p_ForExp(p):
@@ -398,25 +398,6 @@ def p_PRINTFParams(p):
     else:
         p[0] = ASTNode('PRINTFParams', [p[2]] + p[3].child_nodes)
 
-# 并行语句的形参部分
-def p_ParallelIndentList(p):
-    '''ParallelIndentList : IDENTIFIER
-                          | IDENTIFIER COMMA ParallelIndentList'''
-    if len(p) == 2:
-        p[0] = ASTNode('ParallelIndentList', [ASTNode('Ident', value=p[1])])
-    else:
-        print(f'{p[3]}')
-        p[0] = ASTNode('ParallelIndentList', [ASTNode('Ident', value=p[1])] + p[3].child_nodes)
-
-# 并行语句的实参部分
-def p_ParallelRealList(p):
-    '''ParallelRealList : Exp
-                        | Exp COMMA ParallelRealList'''
-    if len(p) == 2:
-        p[0] = ASTNode('ParallelRealList', [p[1]])
-    else:
-        p[0] = ASTNode('ParallelRealList', [p[1]] + p[3].child_nodes)
-       
 def p_FuncDefs(p):
     '''FuncDefs : FuncDef
                 | FuncDef FuncDefs'''
