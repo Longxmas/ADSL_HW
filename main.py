@@ -26,9 +26,7 @@ int value2 = 0; // 互斥
 
 void main() {
 
-  mutex a {
-    x = 1;
-  }
+  x >>;
 }
 """
 
