@@ -4,11 +4,13 @@ class Generator:
     def __init__(self, root_node: ASTNode):
         self.root_node = root_node
         self.code = ""
+        self.parallel_code = ""
+        self.parallel_cnt = 0
 
     def generate(self):
-        assert (self.root_node.is_terminal == False and
-                self.root_node.node_type == 'CompUnit')
+        assert equals_NT(self.root_node, 'CompUnit')
         self.g_CompUnit(self.root_node)
+        self.code += self.parallel_code
 
     def g_CompUnit(self, node: ASTNode):
         self.code += 'package main\nimport \"fmt\"\n'
@@ -147,14 +149,26 @@ class Generator:
         self.g_VAR()
         self.g_SPACE()
         assert equals_T(children[0], 'Ident')
-        self.g_Ident(children[0])
+        ident = children[0]
+        self.g_Ident(ident)
         self.g_SPACE()
-        if len(children) == 1:
+        if len(children) == 1:      # int x
             if self.get_type_prefix(btype) == 'pipe':
                 self.g_CHAN()
                 self.g_SPACE()
-            self.g_BType(btype)
-        elif len(children) == 3:
+                self.g_BType(btype)
+                self.g_SPACE()
+                self.g_ASSIGN()
+                self.g_SPACE()
+                self.g_MAKE()
+                self.g_LPAREN()
+                self.g_CHAN()
+                self.g_SPACE()
+                self.g_BType(btype)
+                self.g_RPAREN()
+            else:
+                self.g_BType(btype)
+        elif len(children) == 3:    # int x[a][b] = c
             self.g_ArrayDimensions(children[1])
             self.g_BType(btype)
             self.g_SPACE()
@@ -163,13 +177,36 @@ class Generator:
             self.g_ArrayDimensions(children[1])
             self.g_BType(btype)
             self.g_InitVal(children[2])
-        elif equals_NT(children[1], 'ArrayDimensions'):
-            self.g_ArrayDimensions(children[1])
+        elif equals_NT(children[1], 'ArrayDimensions'): # int x[a][b]
+            array_dim = children[1]
+            self.g_ArrayDimensions(array_dim)
             if self.get_type_prefix(btype) == 'pipe':
                 self.g_CHAN()
                 self.g_SPACE()
-            self.g_BType(btype)
-        elif equals_NT(children[1], 'InitVal'):
+                self.g_BType(btype)
+                self.g_NEWLINE()
+                # use for to make chan
+                if len(array_dim.child_nodes) == 1: # 一维
+                    self.code += "for _i := 0; _i < "
+                    self.g_ConstExp(array_dim.child_nodes[0])
+                    self.code += "; _i++ { "
+                    self.g_Ident(ident)
+                    self.code += "[_i] = make(chan "
+                    self.g_BType(btype)
+                    self.code += ") }"
+                else:   # 二维
+                    self.code += "for _i := 0; _i < "
+                    self.g_ConstExp(array_dim.child_nodes[0])
+                    self.code += "; _i++ { for _j := 0; _j < "
+                    self.g_ConstExp(array_dim.child_nodes[1])
+                    self.code += "; _j++ { "
+                    self.g_Ident(ident)
+                    self.code += "[_i][_j] = make(chan "
+                    self.g_BType(btype)
+                    self.code += ") }}"
+            else:
+                self.g_BType(btype)
+        elif equals_NT(children[1], 'InitVal'): # int x = c
             self.g_BType(btype)
             self.g_SPACE()
             self.g_ASSIGN()
@@ -374,7 +411,10 @@ class Generator:
         elif equals_NT(node, 'ForStmt'):
             self.g_FOR()
             self.g_SPACE()
-            if equals_T(children[0], 'Ident'):  # for i := range arr
+            if equals_T(children[0], 'Ident'):  # for _, i := range arr
+                self.g_UNDERLINE()
+                self.g_COMMA()
+                self.g_SPACE()
                 self.g_Ident(children[0])
                 self.g_SPACE()
                 self.g_INFER_ASSIGN()
@@ -453,8 +493,13 @@ class Generator:
             self.g_RPAREN()
             self.g_NEWLINE()
         elif equals_NT(node, 'ParallelStmt'):
-            pass
-            # TODO
+            self.parallel_code += f"func parallel_{self.parallel_cnt} ("
+            assert equals_NT(children[0], 'ParallelIndentList')
+            # self.g_ParallelIndentList(children[0])
+            self.parallel_code += ")"
+            assert equals_NT(children[2], 'Block')
+            # self
+
         else:
             raise RuntimeError("g_Stmt fail")
 
@@ -590,6 +635,8 @@ class Generator:
         self.code += '\n'
     def g_SPACE(self):
         self.code += ' '
+    def g_UNDERLINE(self):
+        self.code += '_'
     def g_SEMICOLON(self):
         self.code += ';'
     def g_COMMA(self):
@@ -667,6 +714,8 @@ class Generator:
         self.code += 'var'
     def g_CHAN(self):
         self.code += 'chan'
+    def g_MAKE(self):
+        self.code += 'make'
 
 
 

@@ -18,7 +18,7 @@ def int add(int x, int y) {
 }
 int main() {
     pipe int ch;
-    pipe int ach[3];
+    pipe int ach[2][2];
   const int length[2][2] = {{3, 5*4},{1,2}};
   int a[3] = {1, 2, 3};
   int b[3] = {4, 5, 6};
