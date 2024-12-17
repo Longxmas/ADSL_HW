@@ -21,7 +21,7 @@ def remove_comments(code):
 
 
 code = ""
-with open("testcase/full.c", 'r', encoding='utf-8') as f:
+with open("code_input.p", 'r', encoding='utf-8') as f:
     line = f.readline()
     while line:
         code += line
@@ -52,5 +52,4 @@ with open("code_output.go", "w", encoding='utf-8') as f:
 print("代码生成成功")
 
 print("运行程序 >>> go run code_output.go")
-output = os.popen("go run code_output.go").read()
-print(output)
+os.system("go run code_output.go")
