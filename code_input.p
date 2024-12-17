@@ -1,61 +1,73 @@
-int value1 = 0;
-int value2 = 0;
+// 变量声明和赋值
+int a = 4;
+int b = 5;
+float d = 3.14;
+bool x = false;
+float c[3] = {1.2, 1.3, 1.4};
+str name = "Alice";
+
+// 函数定义与调用
+/* 注释的测试 */
+def int sum(int x, int y) {
+    return x + y;
+}
 
 void main() {
-    int index[3] = {1, 2, 3};   // 线程编号
-    pipe bool ret[3];           // 用于返回数据，同时阻塞主线程
-    int i;
-
-    /* 演示线程同步与通信 */
-    pipe int   p12;     // 线程1向线程2发送int
-    pipe float p23;     // 线程2向线程3发送float
-    pipe bool  p31;     // 线程3向线程1发送bool
-
-    parallel (int x, pipe bool r) in index, ret {
-        if (x == 1) {
-            int send = 123;
-            bool receive;
-            p12 << send;
-            printf("线程1发送int: %d\n", send);
-            p32 >> receive;
-            printf("线程1接收bool: %v\n", receive);
+    // 控制流：条件判断
+    if (a > 5) {
+        printf("a is greater than 5");
+    } else {
+        if (a == 5) {
+            printf("a is equal to 5");
         } else {
-            if (x == 2) {
-                float send = 3.14;
-                int receive;
-                p23 << send;
-                printf("线程2发送float: %f\n", send);
-                p12 >> receive;
-                printf("线程2接收int: %d\n", receive);
-            } else {
-                bool send = true;
-                float receive;
-                p31 << send;
-                printf("线程3发送bool: %v\n", send);
-                p23 >> receive;
-                printf("线程3接收float: %f\n", receive);
-            }
+            printf("a is less than 5");
         }
-        r << true;
-    }
-    for i in index {
-        ret[i - 1] >>;      // 主线程阻塞，等待子线程结束
     }
 
-    /* 演示共享变量互斥访问 */
-    parallel (pipe int r) in ret {
-        int i;
-        for (i = 0; i < 10000; i = i + 1) {
-            value1 = value1 + 1;
-            mutex m1 {      // 互斥访问代码块
-                value2 = value2 + 1;
-            }
+    // 循环：for 循环
+    int i = 0;
+    printf("\n测试第一种for循环: for ;;;\n");
+    for (i = 0; i < 10; i = i + 1) {
+        printf("i:%d, ", i);
+    }
+
+
+    printf("\n测试第二种for循环: for x in\n");
+    for i in c {
+        printf("i:%f, ", i);
+    }
+
+    int result = sum(5, 8);
+    printf("The sum is: %d\n", result);
+
+    // 数组和访问
+    float arr[2][3] = {{1.0, 2.5, 3.6}, {4.6, 5.7, 6.8}};
+    printf("The first element of arr is: %f\n", arr[1][1]);
+
+    // 数组遍历
+    int k = 0;
+    int j = 0;
+    for (k = 0; k < 2; k = k + 1) {
+        for (j = 0; j < 3; j = j + 1) {
+            printf("arr[%d][%d] = %f, ", k, j, arr[k][j]);
         }
-        r << true;
+        printf("\n");
     }
-    for i in index {
-        ret[i - 1] >>;      // 主线程阻塞，等待子线程结束
+
+    printf("testing if for\n");
+    a = 10;
+    // 嵌套控制流
+    if (a > 5) {
+        for (i = 0; i < 3; i = i + 1) {
+            printf("Nested loop, i = %d, ", i);
+        }
+        printf("\n");
+    } else {
+        printf("Outer condition failed.\n");
     }
-    printf("value1: %d\n", value1);     // value1访问没有互斥，因此小于30000
-    printf("value2: %d\n", value2);     // value2等于30000
+
+    // 运算符使用
+    int sum2 = a + b;
+    int product = a * b;
+    printf("Sum: %d, Product: %d", sum2, product);
 }
