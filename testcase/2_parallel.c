@@ -59,3 +59,14 @@ void main() {
     printf("value1: %d\n", value1);     // value1访问没有互斥，因此小于30000
     printf("value2: %d\n", value2);     // value2等于30000
 }
+
+/*
+线程1接收bool: true
+线程3发送bool: true
+线程3接收float: 3.140000
+线程2发送float: 3.140000
+线程2接收int: 123
+线程1发送int: 123
+value1: 29866
+value2: 30000
+*/
