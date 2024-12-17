@@ -361,7 +361,7 @@ class Generator:
             self.g_FLOATCONST(node.child_nodes[0])
         elif equals_T(node.child_nodes[0], 'StrConst'):
             self.g_STRCONST(node.child_nodes[0])
-        elif equals_NT(node.child_nodes[0], 'BoolConst'):
+        elif equals_T(node.child_nodes[0], 'BoolConst'):
             self.g_BoolConst(node.child_nodes[0])
         else:
             raise RuntimeError("g_PrimaryExp fail")

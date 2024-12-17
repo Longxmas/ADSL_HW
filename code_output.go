@@ -1,48 +1,61 @@
 package main
-import "fmt"
-var a int = 4
-var b int = 5
-var d float32 = 3.14
-var c [5]int = [5]int{1, 2, 3, 4, 5}
-var name string = "Alice"
-func sum(x int, y int) int {
-return x + y
-}
+import ("fmt"; "sync")
+var m1 sync.Mutex
+var value1 int = 0
+var value2 int = 0
 func main() {
-if a > 5 {
-fmt.Printf("a is greater than 5")
+var index [3]int = [3]int{1, 2, 3}
+var ret [3]chan bool
+for _i := 0; _i < 3; _i++ { ret[_i] = make(chan bool) }
+var i int
+var p12 chan int = make(chan int)
+var p23 chan float32 = make(chan float32)
+var p31 chan bool = make(chan bool)
+for _i := 0; _i < len(index); _i++ { go parallel_0(index[_i], ret[_i]) }
+for _, i := range index {
+<- ret[i - 1]
+}
+for _i := 0; _i < len(ret); _i++ { go parallel_1(ret[_i]) }
+for _, i := range index {
+<- ret[i - 1]
+}
+fmt.Printf("value1: %d\n", value1)
+fmt.Printf("value2: %d\n", value2)
+}
+func parallel_0 (x int, r chan bool) {
+if x == 1 {
+var send int = 123
+var receive bool
+p12 <- send
+fmt.Printf("线程1发送int: %d\n", send)
+receive = <- p32
+fmt.Printf("线程1接收bool: %v\n", receive)
 } else {
-if a == 5 {
-fmt.Printf("a is equal to 5")
+if x == 2 {
+var send float32 = 3.14
+var receive int
+p23 <- send
+fmt.Printf("线程2发送float: %f\n", send)
+receive = <- p12
+fmt.Printf("线程2接收int: %d\n", receive)
 } else {
-fmt.Printf("a is less than 5")
+var send bool = true
+var receive float32
+p31 <- send
+fmt.Printf("线程3发送bool: %v\n", send)
+receive = <- p23
+fmt.Printf("线程3接收float: %f\n", receive)
 }
 }
-var i int = 0
-fmt.Printf("第一种for循环: for ;;;")
-for i = 0; i < 10; i = i + 1 {
-fmt.Printf("i:%d, ", i)
+r <- true
 }
-fmt.Printf("第二种for循环: for x in")
-for _, i := range c {
-fmt.Printf("i:%d, ", i)
+func parallel_1 (r chan int) {
+var i int
+for i = 0; i < 10000; i = i + 1 {
+value1 = value1 + 1
+m1.Lock()
+value2 = value2 + 1
+m1.Unlock()
 }
-var result int = sum(5, 8)
-fmt.Printf("The sum is: %d", result)
-var arr [2][3]int = [2][3]int{{1, 2, 3}, {4, 5, 6}}
-fmt.Printf("The first element of arr is: %d", arr[0][0])
-var k int = 0
-for k = 0; k < 5; k = k + 1 {
-fmt.Printf("arr[%d] = ", arr[k])
-}
-if a > 5 {
-for i = 0; i < 3; i = i + 1 {
-fmt.Printf("Nested loop, i = %d", i)
-}
-} else {
-fmt.Printf("Outer condition failed.")
-}
-var sum2 int = a + b
-var product int = a * b
-fmt.Printf("Sum: %d, Product: %d", sum2, product)
+r <- true
 }
