@@ -413,9 +413,18 @@ class Generator:
             self.g_SPACE()
             self.g_Stmt(children[1])
             if len(children) == 3:
+                self.code = self.code.rstrip('\n')  # 消去上一个换行
+                self.g_SPACE()
                 self.g_ELSE()
                 self.g_SPACE()
-                self.g_Stmt(children[2])
+                if equals_NT(children[2].child_nodes[0], 'Block'):
+                    self.g_Stmt(children[2])
+                else:
+                    self.g_LBRACE()
+                    self.g_NEWLINE()
+                    self.g_Stmt(children[2])
+                    self.g_RBRACE()
+                    self.g_NEWLINE()
         elif equals_NT(node, 'ForStmt'):
             self.g_FOR()
             self.g_SPACE()
@@ -507,15 +516,18 @@ class Generator:
             self.code += f"func parallel_{self.parallel_cnt} ("
             assert equals_NT(children[0], 'FuncFParams')
             self.g_FuncFParams(children[0])
-            self.code += ")"
+            self.code += ") "
             assert equals_NT(children[2], 'Block')
             self.g_Block(children[2])
             self.parallel_code += self.code
             self.code = self.temp_code
             # 生成code
-            self.code += f"for _i := 0; _i < len("
-            self.code += f"go parallel_{self.parallel_cnt}("
-            self.g_FuncRParams()
+            self.code += "for _i := 0; _i < len("
+            self.g_ParallelFirstLVal(children[1])
+            self.code += f"); _i++ {{ go parallel_{self.parallel_cnt}("
+            self.g_ParallelRealList(children[1])
+            self.code += f") }}"
+            self.g_NEWLINE()
             self.parallel_cnt += 1
         else:
             raise RuntimeError("g_Stmt fail")
@@ -538,6 +550,20 @@ class Generator:
                 self.g_Exp(child)
             else:
                 raise RuntimeError("g_PRINTFParams fail")
+
+    def g_ParallelFirstLVal(self, node: ASTNode):
+        children = node.child_nodes
+        assert equals_NT(children[0], 'LVal')
+        self.g_LVal(children[0])
+
+    def g_ParallelRealList(self, node: ASTNode):
+        for index, child in enumerate(node.child_nodes):
+            assert equals_NT(child, 'LVal')
+            self.g_LVal(child)
+            self.code += "[_i]"
+            if index < len(node.child_nodes) - 1:
+                self.g_COMMA()
+                self.g_SPACE()
 
     def g_FuncDefs(self, node: ASTNode):
         for child in node.child_nodes:

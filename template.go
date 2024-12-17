@@ -1,25 +1,26 @@
 package main
-
 import "fmt"
-
-func main() {
-    s := []int{7, 2, 8, -9, 4, 0}
-
-    //var c [2][2]chan int = [2][2]chan int{{make(chan int, 1), make(chan int, 2)}, {make(chan int, 3), make(chan int, 4)}}
-    var ach [2][2]chan int
-    for _i := 0; _i < 2; _i++ { for _j := 0; _j < 2; _j++ { ach[_i][_j] = make(chan int) }}
-    go sum(s[:len(s)/2], ach[0][0])
-    go sum(s[len(s)/2:], ach[1][0])
-    var x, y int
-    x, y = <-ach[0][0], <-ach[1][0] // 从通道 c 中接收
-
-    fmt.Println(x, y, x+y)
+func add(x int, y int) int {
+if x == y {
+return x * 2
+} else {
+return x + y
 }
-
-func sum(s []int, c chan int) {
-    sum := 0
-    for _, v := range s {
-        sum += v
+}
+func main() {
+var a [3]int = [3]int{1, 2, 3}
+var b [3]int = [3]int{4, 5, 6}
+var c [3]chan int
+for _i := 0; _i < 3; _i++ { c[_i] = make(chan int) }
+for _i := 0; _i < len(a); _i++ { go parallel_0(a[_i], b[_i], c[_i]) }
+    var i int
+    for i = 0; i < 3; i = i + 1 {
+    var t int
+    t = <- c[i]
+    fmt.Printf("%d\n", t)
     }
-    c <- sum // 把 sum 发送到通道 c
+    return 0
+}
+func parallel_0 (x int, y int, z int) {
+z <- add(x, y)
 }

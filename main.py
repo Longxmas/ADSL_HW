@@ -13,30 +13,22 @@ code = """
 def int add(int x, int y) {
     if (x == y) {
         return x * 2;
-    } else 
+    } else
         return x + y;
 }
-int main() {
-    pipe int ch;
-    pipe int ach[2][2];
-  const int length[2][2] = {{3, 5*4},{1,2}};
+void main() {
   int a[3] = {1, 2, 3};
   int b[3] = {4, 5, 6};
   pipe int c[3];
-  parallel (x, y, z) in a, b, c {
+  parallel (int x, int y, pipe int z) in a, b, c {
     z << add(x, y);
   }
-  int a2[3] = {0, 1, 2};
-  for i in a2 {
+  int i;
+  for (i = 0; i < 3; i = i + 1) {
     int t;
     c[i] >> t;
     printf("%d\n", t);
   }
-  int i;
-  for (i = 0; i< 3; i=i+1) {
-    i = i + 1;
-  }
-  return 0;
 }
 """
 # 词法分析
