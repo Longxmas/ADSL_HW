@@ -38,7 +38,7 @@ print("词法分析成功")
 
 # 语法分析
 result = parser.parse(code)
-print(format_ast(result))
+# print(format_ast(result))
 result.build()
 print("语法分析成功")
 

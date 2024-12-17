@@ -3,18 +3,20 @@ int arr[8] = {5, 11, 9, 4, 12, 6, 7, 1};
 int temp[8];
 
 // 归并排序函数
-def bool msort(int s, int t)
+def void msort(int s, int t)
 {
     if (s == t)
         return;
     int mid = (s + t) / 2;
-    int begin[2] = {s, mid};
-    int end[2] = {mid + 1, t};
+    int begin[2] = {s, mid + 1};
+    int end[2] = {mid, t};
     pipe bool ret[2];
-    parallel (int x, int y, int r) in begin, end, ret {
+
+    parallel (int x, int y, pipe bool r) in begin, end, ret {
         msort(x, y);
         r << true;
     }
+
     ret[0] >>; ret[1] >>;
     int i = s, j = mid + 1, k = s;
     for (i = s; i <= mid && j <= t; )
@@ -44,17 +46,15 @@ def bool msort(int s, int t)
     }
     for (i = s; i <= t; i = i + 1)
         arr[i] = temp[i];
-    return true;
 }
 
 // 打印数组
-def bool printArray(int arr[8], int size)
+def void printArray(int arr[8], int size)
 {
     int i;
     for (i = 0; i < size; i = i + 1)
         printf("%d ", arr[i]);
     printf("\n");
-    return true;
 }
 
 void main()

@@ -397,6 +397,16 @@ class Generator:
         self.g_Block(node.child_nodes[0])
 
     def g_Stmt(self, node: ASTNode):
+        def g_single_stmt(nod: ASTNode):
+            if equals_NT(nod, 'BlockStmt'):
+                self.g_Stmt(nod)
+            else:
+                self.g_LBRACE()
+                self.g_NEWLINE()
+                self.g_Stmt(nod)
+                self.g_RBRACE()
+                self.g_NEWLINE()
+
         children = node.child_nodes
         if equals_NT(node, 'AssignStmt'):
             self.g_LVal(children[0])
@@ -434,20 +444,13 @@ class Generator:
             self.g_SPACE()
             self.g_Cond(children[0])
             self.g_SPACE()
-            self.g_Stmt(children[1])
+            g_single_stmt(children[1])
             if len(children) == 3:
                 self.code = self.code.rstrip('\n')  # 消去上一个换行
                 self.g_SPACE()
                 self.g_ELSE()
                 self.g_SPACE()
-                if equals_NT(children[2].child_nodes[0], 'Block'):
-                    self.g_Stmt(children[2])
-                else:
-                    self.g_LBRACE()
-                    self.g_NEWLINE()
-                    self.g_Stmt(children[2])
-                    self.g_RBRACE()
-                    self.g_NEWLINE()
+                g_single_stmt(children[2])
         elif equals_NT(node, 'ForStmt'):
             self.g_FOR()
             self.g_SPACE()
@@ -463,7 +466,7 @@ class Generator:
                 self.g_SPACE()
                 self.g_Ident(children[1])
                 self.g_SPACE()
-                self.g_Stmt(children[2])
+                g_single_stmt(children[2])
             else:   # for ;;
                 if len(children) == 4:      # for x;x;x
                     assert equals_NT(children[0], 'ForExp')
@@ -477,7 +480,7 @@ class Generator:
                     assert equals_NT(children[2], 'ForExp')
                     self.g_ForExp(children[2])
                     self.g_SPACE()
-                    self.g_Stmt(children[3])
+                    g_single_stmt(children[3])
                 elif equals_NT(children[0], 'Cond'):    # for ;x;x
                     self.g_SEMICOLON()
                     self.g_SPACE()
@@ -488,7 +491,7 @@ class Generator:
                     assert equals_NT(children[1], 'ForExp')
                     self.g_ForExp(children[1])
                     self.g_SPACE()
-                    self.g_Stmt(children[2])
+                    g_single_stmt(children[2])
                 elif equals_NT(children[1], 'Cond'):    # for x;x;
                     assert equals_NT(children[0], 'ForExp')
                     self.g_ForExp(children[0])
@@ -497,7 +500,7 @@ class Generator:
                     self.g_Cond(children[1])
                     self.g_SEMICOLON()
                     self.g_SPACE()
-                    self.g_Stmt(children[2])
+                    g_single_stmt(children[2])
                 else:       # for x;;x
                     assert equals_NT(children[0], 'ForExp')
                     self.g_ForExp(children[0])
@@ -507,7 +510,7 @@ class Generator:
                     assert equals_NT(children[1], 'ForExp')
                     self.g_ForExp(children[1])
                     self.g_SPACE()
-                    self.g_Stmt(children[2])
+                    g_single_stmt(children[2])
         elif equals_NT(node, 'BreakStmt'):
             self.g_BREAK()
             self.g_NEWLINE()
@@ -598,7 +601,7 @@ class Generator:
         self.g_SPACE()
         if children[0].word_value != 'void':
             self.g_BType(children[0])
-        self.g_SPACE()
+            self.g_SPACE()
         if equals_NT(children[2], 'Block'):
             self.g_Block(children[2])
         else:
