@@ -18,18 +18,18 @@ def Parse(test_name):
     code = ""
     dir_path = 'testcase/'
     if test_name == "full":
-        file_path = "1_full.c"
+        file_path = "1_full.p"
     elif test_name == "parallel":
-        file_path = "2_parallel.c"
-    elif test_name == "merge_sort":
-        file_path = "3_merge_sort.c"
+        file_path = "2_parallel.p"
+    elif test_name == "msort":
+        file_path = "3_merge_sort.p"
     elif test_name == "gemv":
-        file_path = "4_gemv.c"
+        file_path = "4_gemv.p"
     elif test_name == "nest":
-        file_path = "5_nest.c"
+        file_path = "5_nest.p"
     else:
-        print(f"不支持的测试名称: {test_name}，请选择full、parallel、merge_sort、gemv或nest。")
-        return None
+        # print(f"不支持的测试名称: {test_name}，请选择full、parallel、merge_sort、gemv或nest。")
+        file_path = test_name
 
     try:
         with open(dir_path + file_path, 'r', encoding='utf-8') as f:
