@@ -29,7 +29,7 @@ parallel (int x) in index {
 
 ### 2.1 基础语法
 
-P-lang的语句以`;`结尾。注释可以是单行的`//`，也可以是多行的`/* */`。
+P-lang的语句以`;`结尾。注释可以是单行的`//`，也可以是多行的`/* */`。主函数必须声明为`void main() {}`，不能有返回值。
 
 ### 2.2 数据类型
 
@@ -119,7 +119,7 @@ def <返回值类型> <函数名>(<参数1类型> <参数1名>, ...) {
 
 ```c
 parallel (<参数1类型> <参数1名>, ...) in <数组1>, ... {
-	<并行的语句>
+	<并行语句>
 }
 ```
 
@@ -129,7 +129,7 @@ parallel (<参数1类型> <参数1名>, ...) in <数组1>, ... {
 
 ### 2.8 管道
 
-为了支持线程间传递数据我们设计了管道数据类型，创建管道只需在基本数据类型前加上`pipe`关键字，如下面的例子：
+为了支持线程间传递数据我们设计了管道数据类型，管道类型不能是`const`，创建管道只需在基本数据类型前加上`pipe`关键字，如下面的例子：
 
 ```c
 pipe int ret;
@@ -168,12 +168,12 @@ for i in index {
 为了实现对共享变量的正确访问，我们实现了互斥语句块，语法如下所示：
 
 ```c
-mutex <互斥代码块名> {
-	<互斥访问的语句>  
+mutex <互斥语句块名> {
+	<互斥语句>  
 }
 ```
 
-`mutex`关键字声明了该语句块为互斥语句块，线程在进入互斥语句块前会先进行加锁，保证同一时间只有一个线程能访问互斥语句块中的语句，执行完后再释放锁。`mutex`关键字后应指定互斥代码块的名称，以区分不同的互斥代码块。
+`mutex`关键字声明了该语句块为互斥语句块，线程在进入互斥语句块前会先进行加锁，保证同一时间只有一个线程能访问互斥语句块中的语句，执行完后再释放锁。`mutex`关键字后应指定互斥语句块的名称，以区分不同的互斥语句块。
 
 ## 3 语法语义
 
@@ -542,7 +542,7 @@ mutex <互斥代码块名> {
 3. **`for` 循环内的并行任务调度**： 循环中的任务可能会在多个线程或进程中并行执行，具体的任务调度和同步依赖于 `PARALLEL` 语句的实现：
 
    - 在每次迭代中，任务的输入参数（如 `FuncFParams`）会被计算并传递给并行任务。
-   - `PARALLEL` 语句通过 `IN` 关键字与并行执行的任务代码块相关联。
+   - `PARALLEL` 语句通过 `IN` 关键字与并行执行的任务语句块相关联。
 
 #### 3.3.5 函数指称语义
 
@@ -744,19 +744,434 @@ parser = yacc.yacc(debug=True, debuglog=log)
 
 #### 4.3.1 整体逻辑
 
+代码生成即根据语法分析构建的AST来生成目标代码。生成时，需要为每种节点编写对应的代码生成子程序，然后从AST的根节点开始，自顶向下遍历每个节点。下面是常量声明语句`ConstDecl`代码生成子程序的一个例子：
+
+```python
+def g_ConstDecl(self, node: ASTNode):
+    '''ConstDecl : CONST BType ConstDefList SEMICOLON'''
+    children = node.child_nodes
+    assert equals_T(children[0], 'BType')
+    btype = children[0]
+    assert equals_NT(children[1], 'ConstDefList')
+    self.g_ConstDefList(children[1], btype)
+```
+
+该子程序根据文法的结构进行处理，对每个非终结符依次进入其代码生成子程序，注意到该子程序也包含了错误检测，以保证AST的结构正确，这对于调试很有帮助。由于代码生成较为繁琐，下面仅提供了几类非并行语法的处理，并行语法的代码生成将在下面三章叙述。
+
+- 对于表达式语句，P-lang与go的语法几乎一致，因此只需简单根据AST的结构生成代码即可；
+- 对于非数组的常量和变量的声明和赋初值，P-lang与go的参数位置不一样，在生成代码时需要调整生成顺序和添加必要的关键字；
+- 对于数组的赋初值，go要求在初值列表前提供参数类型，因此在编写代码生成子程序时，需要将数组的类型传入初值列表的生成子程序；
+- 对于输入输出语句，我们延用了C语言中的`printf`和`scanf`，这在go中也有对应的实现，方便起见，`scanf`语句中的`&`由编译器辅助添加，使得代码更加简洁；
+- P-lang的语句分隔符只支持`;`，在生成时，考虑到代码的可读性，我们将`;`转换为go的换行符；
+- P-lang与go在括号的使用上也略有差别，P-lang的`if`和`for`语句（不包括`for-in`）要求后面的表达式带括号，而go不需要，当`if`和`for`的语句块中只有一条语句时`{}`可以省略，但go必须有`{}`，对于这些细节，我们都进行了判断以生成正确的代码。
+
 #### 4.3.2 线程实现
+
+对于`parallel`语句块的实现，我们利用了go中的`goroutines`轻量级线程。将`parallel`块中的语句封装成函数，然后循环使用`go`语句创建多个线程，如下面的`parallel`语句：
+
+```c
+int index[3] = {1, 2, 3};
+parallel (int x) in index {
+    <语句>
+}
+```
+
+将被翻译为如下的go语言代码：
+
+```go
+var index [3]int = [3]int{1, 2, 3}
+for _i := 0; _i < len(index); _i++ {
+    go parallel_1(index[_i])
+}
+
+func parallel_1 (x int) {
+	<语句>
+}
+```
 
 #### 4.3.3 管道实现
 
+管道类型`pipe`使用了go中的`Channel`数据类型，在使用`Channel`类型前必须对其初始化。如下面创建`pipe`类型数组的语句：
+
+```c
+pipe bool ret[3];
+```
+
+将被翻译为：
+
+```go
+var ret [3]chan bool
+for _i := 0; _i < 3; _i++ { ret[_i] = make(chan bool) }
+```
+
+在循环中我们使用`make(chan <type>)`来初始化每一个管道类型变量。
+
 #### 4.3.4 互斥实现
+
+互斥语句块的实现使用了go中`sync.Mutex`库提供的互斥操作，互斥语句块中的互斥语句块名将被翻译为一个同名的互斥锁。如下面的互斥语句块：
+
+```c
+mutex m1 {
+    <互斥语句>
+}
+```
+
+将被翻译为：
+
+```go
+var m1 sync.Mutex
+
+m1.Lock()
+<互斥语句>
+m1.Unlock()
+```
 
 ## 5 验证与测试
 
+为验证P-lang的词法语法分析和代码生成的正确性，我们进行了一系列的测试。
+
 ### 5.1 基础功能
 
-### 5.2 并行行为
+该测试旨在验证P-lang除并行以外功能的正确性，我们的测试用例覆盖了尽可能多的情况。输入以下命令即可运行基础功能测试：
+
+```bash
+$ python main.py full
+```
+
+测试代码如下：
+
+```c
+// 变量声明和赋值
+int a = 4;
+int b = 5;
+float d = 3.14;
+bool x = false;
+bool c[3] = {true, true, false};
+str name = "自带并行の语言！";
+
+// 函数定义与调用
+/* 注释的测试 */
+def int sum(int x, int y) {
+    return x + y;
+}
+
+void main() {
+    // 字符串输出
+    printf("这是一个%s \n", name);
+
+    // 控制流：条件判断
+    if (a > 5) {
+        printf("a is greater than 5");
+    } else {
+        if (a == 5) {
+            printf("a is equal to 5");
+        } else {
+            printf("a is less than 5");
+        }
+    }
+
+    // 循环：for 循环
+    int i = 0;
+    printf("\n测试第一种for循环: for ;;;\n");
+    for (i = 0; i < 10; i = i + 1) {
+        printf("i:%d, ", i);
+    }
+
+
+    printf("\n测试第二种for循环: for x in\n");
+    bool boo;
+    for boo in c {
+        printf("boo:%t, ", boo);
+    }
+
+    printf("\n");
+    int result = sum(5, 8);
+    printf("The sum is: %d\n", result);
+
+    // 数组和访问
+    float arr[2][3] = {{1.0, 2.5, 3.6}, {4.6, 5.7, 6.8}};
+    printf("The first element of arr is: %f\n", arr[1][1]);
+
+    // 数组遍历
+    int k = 0;
+    int j = 0;
+    for (k = 0; k < 2; k = k + 1) {
+        for (j = 0; j < 3; j = j + 1) {
+            printf("arr[%d][%d] = %f, ", k, j, arr[k][j]);
+        }
+        printf("\n");
+    }
+
+    printf("testing if for\n");
+    a = 10;
+    // 嵌套控制流
+    if (a > 5) {
+        for (i = 0; i < 3; i = i + 1) {
+            printf("Nested loop, i = %d, ", i);
+        }
+        printf("\n");
+    } else {
+        printf("Outer condition failed.\n");
+    }
+
+    // 运算符使用
+    int sum2 = a + b;
+    int product = a * b;
+    printf("Sum: %d, Product: %d", sum2, product);
+}
+```
+
+运行结果如下：
+
+```
+这是一个自带并行の语言！ 
+a is less than 5
+测试第一种for循环: for ;;;
+i:0, i:1, i:2, i:3, i:4, i:5, i:6, i:7, i:8, i:9,
+测试第二种for循环: for x in
+boo:true, boo:true, boo:false,
+The sum is: 13
+The first element of arr is: 5.700000
+arr[0][0] = 1.000000, arr[0][1] = 2.500000, arr[0][2] = 3.600000,
+arr[1][0] = 4.600000, arr[1][1] = 5.700000, arr[1][2] = 6.800000,
+testing if for
+Nested loop, i = 0, Nested loop, i = 1, Nested loop, i = 2,
+Sum: 15, Product: 50
+```
+
+### 5.2 并行功能
+
+#### 5.2.1 通信、同步、互斥
+
+该测试旨在验证P-lang并行功能的正确性，包括对并行语句块、线程同步、线程通信、互斥访问的测试。输入以下命令即可运行并行功能测试：
+
+```bash
+$ python main.py parallel
+```
+
+测试代码如下：
+
+```c
+int value1 = 0;
+int value2 = 0;
+
+pipe int   p12;     // 线程1向线程2发送int
+pipe float p23;     // 线程2向线程3发送float
+pipe bool  p31;     // 线程3向线程1发送bool
+
+void main() {
+    int index[3] = {1, 2, 3};   // 线程编号
+    pipe bool ret[3];           // 用于返回数据，同时阻塞主线程
+    int i;
+
+    /************** 演示线程同步与通信 **************/
+    parallel (int x, pipe bool r) in index, ret {
+        if (x == 1) {
+            int send = 123;
+            bool receive;
+            p31 >> receive;
+            printf("线程1接收bool: %v\n", receive);
+            p12 << send;
+            printf("线程1发送int: %d\n", send);
+        } else {
+            if (x == 2) {
+                float send = 3.14;
+                int receive;
+                p23 << send;
+                printf("线程2发送float: %f\n", send);
+                p12 >> receive;
+                printf("线程2接收int: %d\n", receive);
+            } else {
+                bool send = true;
+                float receive;
+                p31 << send;
+                printf("线程3发送bool: %v\n", send);
+                p23 >> receive;
+                printf("线程3接收float: %f\n", receive);
+            }
+        }
+        r << true;
+    }
+    for i in index {
+        ret[i - 1] >>;      // 主线程阻塞，等待子线程结束
+    }
+
+    /************** 演示共享变量互斥访问 **************/
+    parallel (pipe bool r) in ret {
+        int i;
+        for (i = 0; i < 10000; i = i + 1) {
+            value1 = value1 + 1;
+            mutex m1 {      // 互斥访问语句块
+                value2 = value2 + 1;
+            }
+        }
+        r << true;
+    }
+    for i in index {
+        ret[i - 1] >>;      // 主线程阻塞，等待子线程结束
+    }
+    printf("value1: %d\n", value1);     // value1访问没有互斥，因此小于30000
+    printf("value2: %d\n", value2);     // value2等于30000
+}
+```
+
+运行结果如下：
+
+```
+线程1接收bool: true
+线程3发送bool: true
+线程3接收float: 3.140000
+线程2发送float: 3.140000
+线程2接收int: 123
+线程1发送int: 123
+value1: 29866
+value2: 30000
+```
+
+上述测试代码通过三个子线程互相发送数据验证了使用`pipe`实现通信的正确性；主线程阻塞等待子线程验证了同步的正确性；对value2的互斥访问使得其求和的结果正好为30000，而在互斥语句块外求和的value1结果小于30000，说明了互斥语句块功能的正确性。
+
+#### 5.2.2 嵌套并行
+
+另外我们的`parallel`语句块还支持嵌套使用，这更加说明了P-lang的灵活性和鲁棒性。输入以下命令即可运行嵌套功能测试：
+
+```bash
+$ python main.py nest
+```
+
+测试代码如下：
+
+```c
+void main() {
+    int outer_index[3] = {1, 2, 3};   // 外层线程编号
+    pipe bool ret[3];
+
+    parallel (int x, pipe bool r) in outer_index, ret {
+        int outer_index[3] = {x, x, x};     // 记录外层编号
+        int inner_index[3] = {1, 2, 3};     // 内层线程编号
+        pipe bool rett[3];
+
+        parallel (int x, int y, pipe bool r) in outer_index, inner_index, rett {
+            printf("我是子线程%d的子线程%d\n", x, y);
+            r << true;
+        }
+        int i;
+        for i in inner_index {
+            rett[i - 1] >>;
+        }
+        r << true;
+    }
+    int i;
+    for i in outer_index {
+        ret[i - 1] >>;
+    }
+}
+```
+
+运行结果如下：
+
+```
+我是子线程3的子线程3
+我是子线程1的子线程3
+我是子线程1的子线程1
+我是子线程1的子线程2
+我是子线程2的子线程3
+我是子线程2的子线程1
+我是子线程2的子线程2
+我是子线程3的子线程1
+我是子线程3的子线程2
+```
 
 ### 5.3 归并排序
+
+我们用P-lang编写了并行的归并排序代码，排序时的二分操作将分为两个线程分别执行。输入以下命令即可运行归并排序测试：
+
+```bash
+$ python main.py msort
+```
+
+测试代码如下：
+
+```c
+int arr_size = 8;
+int arr[8] = {5, 11, 9, 4, 12, 6, 7, 1};
+int temp[8];
+
+// 归并排序函数
+def void msort(int s, int t)
+{
+    if (s == t)
+        return;
+    int mid = (s + t) / 2;
+    int begin[2] = {s, mid + 1};
+    int end[2] = {mid, t};
+    pipe bool ret[2];
+
+    // 分两个线程对二分的数组排序
+    parallel (int x, int y, pipe bool r) in begin, end, ret {
+        msort(x, y);
+        r << true;
+    }
+
+    ret[0] >>; ret[1] >>;
+    int i = s, j = mid + 1, k = s;
+    for (i = s; i <= mid && j <= t; )
+    {
+        if (arr[i] <= arr[j])
+        {
+            temp[k] = arr[i];
+            k = k + 1;
+            i = i + 1;
+        }
+        else
+        {
+            temp[k] = arr[j];
+            k = k + 1;
+            j = j + 1;
+        }
+    }
+    for (; i <= mid; i = i + 1)
+    {
+        temp[k] = arr[i];
+        k = k + 1;
+    }
+    for (; j <= t; j = j + 1)
+    {
+        temp[k] = arr[j];
+        k = k + 1;
+    }
+    for (i = s; i <= t; i = i + 1)
+        arr[i] = temp[i];
+}
+
+// 打印数组
+def void printArray(int arr[8], int size)
+{
+    int i;
+    for (i = 0; i < size; i = i + 1)
+        printf("%d ", arr[i]);
+    printf("\n");
+}
+
+void main()
+{
+    printf("排序前的数组: \n");
+    printArray(arr, arr_size);
+
+    msort(0, arr_size - 1); // 调用排序函数
+
+    printf("排序后的数组: \n");
+    printArray(arr, arr_size);
+}
+```
+
+运行结果如下：
+
+```
+排序前的数组: 
+5 11 9 4 12 6 7 1 
+排序后的数组: 
+1 4 5 6 7 9 11 12
+```
 
 ### 5.4 GEMV
 
