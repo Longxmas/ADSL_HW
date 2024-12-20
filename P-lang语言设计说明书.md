@@ -724,6 +724,57 @@ def p_if_stmt(p):
 
 在这种情况下，`IfStmt` 节点有两个子节点，分别是条件表达式（`Cond`）和执行语句（`Stmt`）。
 
+其中ASTNode的定义如下：
+
+```python
+class ASTNode:
+    """
+    parent_node: 父节点
+    is_terminal: 是否是终结符
+    node_type: is_terminal == false时才有意义，表示当前非终结符类型
+    child_nodes: is_terminal == false时才有意义，表示子节点
+    word_type: is_terminal == true时才有意义，表示终结符类型（即lexer.py中的tokens）
+    word_value: is_terminal == true时才有意义，表示终结符对应的值（关键字、数字、字符串）
+    """
+    def __init__(self, type, children=None, value=None):
+        self.parent_node = None
+        self.is_terminal = (children == None)
+        if isinstance(children, ASTNode):
+            self.child_nodes = [children]
+        elif isinstance(children, list):
+            self.child_nodes = children
+        else:
+            self.child_nodes = []
+        self.node_type = type
+        self.word_type = type if self.is_terminal else None
+        self.word_value = value
+```
+
+每个节点记录其父节点和子节点，对于终结符节点，还会记录其相应的值，包括关键字、数字、字符串等。除此之外，由于ply语法解析过程没有记录ASTNode节点之间的父子关系。为此，实现了基于DFS构建节点间父子关系的遍历函数：
+```python
+def build(self):
+    """
+    遍历当前节点及其所有子节点，为所有节点构建父子关系
+    """
+    def visitor(node, parent=None):
+        if not node:
+            return
+        
+        node.parent_node = parent
+
+        if not node.is_terminal and node.child_nodes:
+            for child in node.child_nodes:
+                if isinstance(child, ASTNode):
+                    visitor(child, node)
+                elif isinstance(child, list):
+                    for c in child:
+                        visitor(c, node)
+                
+    visitor(self)
+```
+
+在构建完AST后调用build函数即可构建节点之间的父子关系，便于后续代码生成使用。
+
 4. **生成语法分析树**
 
 通过调用 `yacc.parse()` 方法，可以将通过词法分析器生成的令牌序列传递给语法分析器，构建出语法分析树（AST）。这段代码的主要任务就是根据输入的令牌流生成抽象语法树，并在 AST 中反映出程序的结构。
@@ -1174,5 +1225,113 @@ void main()
 ```
 
 ### 5.4 GEMV
+
+这一小节主要介绍GEMV测试的验证和实现方式。
+
+首先我们实现了一个python脚本，通过`numpy`初始化了一个`5*10`的矩阵A和一个`10*1`的向量x，并调用`numpy`的矩阵向量乘方法获取`A*x`的正确结果。
+
+```python
+# 构造一个5 * 10的随机浮点矩阵
+matrix_5x10 = np.random.rand(5, 10).astype(float)
+# 构造一个1 * 10的随机浮点向量
+vector_1x10 = np.random.rand(1, 10).astype(float)
+
+# 进行矩阵向量乘法
+result_vector = np.dot(rounded_matrix_5x10, rounded_vector_1x10.reshape(-1, 1)).flatten()
+```
+
+同时，将矩阵和向量的值输入到文本文件里供后续编译运行使用
+```python
+with open('gemv.txt', 'w') as f:
+    # 先写入5 * 10的矩阵数据
+    for row in rounded_matrix_5x10:
+        row_str = " ".join(map(str, row))
+        f.write(row_str + ' ')
+    # 再写入1 * 10的向量数据
+    vector_str = " ".join(map(str, rounded_vector_1x10))
+    f.write(vector_str + "\n")
+    # 写入矩阵向量乘法结果
+    result_str = " ".join(map(str, rounded_result_vector))
+    f.write(result_str + "\n")
+```
+
+在测试代码方面，主要逻辑为，初始化`5*10`矩阵A以及`10*1`向量x，然后通过scanf语句输入数据：
+
+```c
+float A[5][10];   // 5x10矩阵
+float x[10];                         // 10x1向量
+float y[5] = {0.0, 0.0, 0.0, 0.0, 0.0};     // 5x1结果向量
+for (i = 0; i < 5; i = i + 1){
+    for (j = 0; j < 10; j = j + 1) {
+        scanf("%f", A[i][j]);
+    }
+}
+for (i = 0; i < 10; i = i + 1) {
+    scanf("%f", x[i]);
+}
+```
+
+通过parallel语句进行并行化地计算：
+```c
+parallel (int i, float row[10], pipe bool r) in index, A, ret {
+    int j;
+    for (j = 0; j < 10; j = j + 1) {
+        y[i] = y[i] + row[j] * x[j];
+    }
+    r << true;
+}
+
+for i in index {
+    ret[i] >>;      // 主线程阻塞，等待子线程结束
+}
+```
+
+最终将结果输出：
+
+```c
+for (i = 0; i < 5; i = i + 1) {
+    printf("y[%d] = %f, ", i, y[i]);
+}
+```
+
+值得一提的是，测评过程中用subprocess库实现了测试过程全自动化执行。
+
+```python
+# 在gemv测试模式下，使用subprocess模块运行python get_input.py命令，并等待其执行完成
+try:
+    process = subprocess.Popen(["python", "get_input.py"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    if process.returncode!= 0:
+        print(f"运行python get_input.py出现错误，错误信息如下：\n{stderr.decode('utf-8')}")
+        return
+except FileNotFoundError:
+    print("python get_input.py文件不存在，请确保该文件已存在")
+    return
+
+# 尝试从gemv.txt中读取第一行作为后续go命令的输入
+try:
+    with open('gemv.txt', 'r', encoding='utf-8') as f:
+        first_line = f.readline().strip()
+        second_line = f.readline().strip()
+except FileNotFoundError:
+    print("gemv.txt文件不存在，请确保该文件已生成")
+    return
+
+# 从gemv.txt读取的第一行作为输入传入go run code_output.go命令
+process = subprocess.Popen(
+    ['go', 'run', 'code_output.go'],  # Go 命令和文件
+    stdin=subprocess.PIPE,  # 启用标准输入管道
+    stdout=subprocess.PIPE,  # 获取标准输出
+    stderr=subprocess.PIPE,  # 获取标准错误输出
+)
+
+# 将 first_line 变量传递给 Go 程序
+stdout, stderr = process.communicate(input=first_line.encode())  # 传递的输入需要编码成字节
+
+# 打印 Go 程序的输出
+print(stdout.decode())  # 获取并打印 Go 程序的输出
+# 然后输出第二行表示正确结果
+print("GEMV正确结果为: " + second_line)
+```
 
 ### 5.5 性能测试
