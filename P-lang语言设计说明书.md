@@ -1228,7 +1228,11 @@ void main()
 
 ### 5.4 GEMV
 
-这一小节主要介绍GEMV测试的验证和实现方式。
+我们用P-lang编写了并行的gemv计算代码。输入以下命令即可运行gemv测试：
+
+```bash
+$ python main.py gemv
+```
 
 首先我们实现了一个python脚本，通过`numpy`初始化了一个`5*10`的矩阵A和一个`10*1`的向量x，并调用`numpy`的矩阵向量乘方法获取`A*x`的正确结果。
 
@@ -1257,83 +1261,79 @@ with open('gemv.txt', 'w') as f:
     f.write(result_str + "\n")
 ```
 
-在测试代码方面，主要逻辑为，初始化`5*10`矩阵A以及`10*1`向量x，然后通过scanf语句输入数据：
+p-lang测试代码如下：
 
 ```c
+// 矩阵和向量定义
 float A[5][10];   // 5x10矩阵
 float x[10];                         // 10x1向量
-float y[5] = {0.0, 0.0, 0.0, 0.0, 0.0};     // 5x1结果向量
-for (i = 0; i < 5; i = i + 1){
-    for (j = 0; j < 10; j = j + 1) {
-        scanf("%f", A[i][j]);
+float y[5] = {0.0, 0.0, 0.0, 0.0, 0.0};                              // 结果向量
+
+void main() {
+    int index[5] = {0, 1, 2, 3, 4};   // 线程编号
+    pipe bool ret[5];        // 用于返回数据，同时阻塞主线程
+    int i, j;
+    for (i = 0; i < 5; i = i + 1){
+        for (j = 0; j < 10; j = j + 1) {
+            scanf("%f", A[i][j]);
+        }
     }
-}
-for (i = 0; i < 10; i = i + 1) {
-    scanf("%f", x[i]);
-}
-```
 
-通过parallel语句进行并行化地计算：
-```c
-parallel (int i, float row[10], pipe bool r) in index, A, ret {
-    int j;
-    for (j = 0; j < 10; j = j + 1) {
-        y[i] = y[i] + row[j] * x[j];
+    for (i = 0; i < 5; i = i + 1){
+        for (j = 0; j < 10; j = j + 1) {
+            printf("A[%d][%d] = %f, ", i, j , A[i][j]);
+        }
+        printf("\n");
     }
-    r << true;
+
+    for (i = 0; i < 10; i = i + 1) {
+        scanf("%f", x[i]);
+    }
+
+    for (i = 0; i < 10; i = i + 1) {
+        printf("x[%d] = %f, ", i, x[i]);
+    }
+    printf("\n");
+
+    parallel (int i, float row[10], pipe bool r) in index, A, ret {
+        int j;
+        for (j = 0; j < 10; j = j + 1) {
+            y[i] = y[i] + row[j] * x[j];
+        }
+        r << true;
+    }
+
+    // 等待所有线程完成
+    for i in index {
+        ret[i] >>;      // 主线程阻塞，等待子线程结束
+    }
+
+    // 打印最终结果
+    for (i = 0; i < 5; i = i + 1) {
+        printf("y[%d] = %f, ", i, y[i]);
+    }
+    printf("\n");
 }
 
-for i in index {
-    ret[i] >>;      // 主线程阻塞，等待子线程结束
-}
-```
-
-最终将结果输出：
-
-```c
-for (i = 0; i < 5; i = i + 1) {
-    printf("y[%d] = %f, ", i, y[i]);
-}
 ```
 
 值得一提的是，测评过程中用subprocess库实现了测试过程全自动化执行。
 
-```python
-# 在gemv测试模式下，使用subprocess模块运行python get_input.py命令，并等待其执行完成
-try:
-    process = subprocess.Popen(["python", "get_input.py"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
-    if process.returncode!= 0:
-        print(f"运行python get_input.py出现错误，错误信息如下：\n{stderr.decode('utf-8')}")
-        return
-except FileNotFoundError:
-    print("python get_input.py文件不存在，请确保该文件已存在")
-    return
+测试结果如下：
 
-# 尝试从gemv.txt中读取第一行作为后续go命令的输入
-try:
-    with open('gemv.txt', 'r', encoding='utf-8') as f:
-        first_line = f.readline().strip()
-        second_line = f.readline().strip()
-except FileNotFoundError:
-    print("gemv.txt文件不存在，请确保该文件已生成")
-    return
+```bash
+词法分析成功
+语法分析成功
+代码生成成功
+A[0][0] = 0.673638, A[0][1] = 0.943334, A[0][2] = 0.144032, A[0][3] = 0.147547, A[0][4] = 0.390738, A[0][5] = 0.742968, A[0][6] = 0.994693, A[0][7] = 0.056876, A[0][8] = 0.119597, A[0][9] = 0.070824, 
+A[1][0] = 0.765129, A[1][1] = 0.388058, A[1][2] = 0.089147, A[1][3] = 0.054569, A[1][4] = 0.619291, A[1][5] = 0.126283, A[1][6] = 0.913208, A[1][7] = 0.048246, A[1][8] = 0.080403, A[1][9] = 0.777511, 
+A[2][0] = 0.556523, A[2][1] = 0.114798, A[2][2] = 0.746437, A[2][3] = 0.830497, A[2][4] = 0.593736, A[2][5] = 0.980340, A[2][6] = 0.904868, A[2][7] = 0.325186, A[2][8] = 0.931050, A[2][9] = 0.282715, 
+A[3][0] = 0.758407, A[3][1] = 0.792347, A[3][2] = 0.973249, A[3][3] = 0.336212, A[3][4] = 0.830905, A[3][5] = 0.456582, A[3][6] = 0.008597, A[3][7] = 0.200148, A[3][8] = 0.574267, A[3][9] = 0.659491,
+A[4][0] = 0.863120, A[4][1] = 0.199355, A[4][2] = 0.615681, A[4][3] = 0.032920, A[4][4] = 0.141385, A[4][5] = 0.437207, A[4][6] = 0.588165, A[4][7] = 0.424999, A[4][8] = 0.245098, A[4][9] = 0.659705,
+x[0] = 0.814045, x[1] = 0.307570, x[2] = 0.957040, x[3] = 0.912955, x[4] = 0.848575, x[5] = 0.164759, x[6] = 0.279934, x[7] = 0.422277, x[8] = 0.031930, x[9] = 0.692041,        
+y[0] = 1.920340, y[1] = 2.240310, y[2] = 3.242270, y[3] = 3.441432, y[4] = 2.383713,
 
-# 从gemv.txt读取的第一行作为输入传入go run code_output.go命令
-process = subprocess.Popen(
-    ['go', 'run', 'code_output.go'],  # Go 命令和文件
-    stdin=subprocess.PIPE,  # 启用标准输入管道
-    stdout=subprocess.PIPE,  # 获取标准输出
-    stderr=subprocess.PIPE,  # 获取标准错误输出
-)
-
-# 将 first_line 变量传递给 Go 程序
-stdout, stderr = process.communicate(input=first_line.encode())  # 传递的输入需要编码成字节
-
-# 打印 Go 程序的输出
-print(stdout.decode())  # 获取并打印 Go 程序的输出
-# 然后输出第二行表示正确结果
-print("GEMV正确结果为: " + second_line)
+GEMV正确结果为: 1.92034 2.24031 3.24227 3.441431 2.383713
 ```
 
 ### 5.5 性能测试
