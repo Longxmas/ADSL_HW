@@ -1,4 +1,6 @@
-## 1 概述
+<h1 align="center">P-lang语言设计说明书</h1>
+
+## 一、概述
 
 ### 1.1 背景介绍
 
@@ -23,7 +25,7 @@ parallel (int x) in index {
 
 我们的项目在github上开源，地址为[https://github.com/Longxmas/ADSL_HW](https://github.com/Longxmas/ADSL_HW)，其中提供了编译器和一些测试用例。
 
-## 2 P-lang基础
+## 二、P-lang基础
 
 在正式介绍文法和编译器实现之前，我们打算用一个章节来介绍P-lang的总体设计，使读者先对这门语言有一个大致的了解。
 
@@ -175,7 +177,7 @@ mutex <互斥语句块名> {
 
 `mutex`关键字声明了该语句块为互斥语句块，线程在进入互斥语句块前会先进行加锁，保证同一时间只有一个线程能访问互斥语句块中的语句，执行完后再释放锁。`mutex`关键字后应指定互斥语句块的名称，以区分不同的互斥语句块。
 
-## 3 语法语义
+## 三、语法语义
 
 ### 3.1 词法规则
 
@@ -618,7 +620,7 @@ mutex <互斥语句块名> {
        bind(ID, pipe loc), sto'
    ```
 
-## 4 编译器实现
+## 四、编译器实现
 
 ### 4.1 词法分析
 
@@ -877,7 +879,7 @@ m1.Lock()
 m1.Unlock()
 ```
 
-## 5 验证与测试
+## 五、验证与测试
 
 为验证P-lang的词法语法分析和代码生成的正确性，我们进行了一系列的测试。
 
@@ -1335,3 +1337,49 @@ print("GEMV正确结果为: " + second_line)
 ```
 
 ### 5.5 性能测试
+
+基于5.3节的归并排序代码，我们对并行语句块的性能进行了测试，即比较是否使用并行语句块对运行时间的影响。详细的代码见`/testcase/perf.p`，其中不使用并行语句块的核心代码如下：
+
+```c
+def void msort_normal(int s, int t)
+{
+    ...
+    msort_normal(s, mid);
+    msort_normal(mid + 1, t);
+    ...
+}
+```
+
+使用并行语句块的核心代码如下：
+
+```c
+def void msort_parallel(int s, int t)
+{
+	...
+    if (t - s > 10000) {
+        int begin[2] = {s, mid + 1};
+        int end[2] = {mid, t};
+        pipe bool ret[2];
+        parallel (int x, int y, pipe bool r) in begin, end, ret {
+            msort_parallel(x, y);
+            r << true;
+        }
+        ret[0] >>; ret[1] >>;
+    } else {
+        msort_normal(s, mid);
+        msort_normal(mid + 1, t);
+    }
+    ...
+}
+```
+
+上述代码对数据量进行了判断，当排序数组的长度小于等于`10000`时使用普通排序，这是为了避免频繁创建线程带来过大开销。我们的测试数据量为`1000000`，使用python生成随机数据然后输入给程序，运行结果如下：
+
+```
+normal msort:
+81.7834ms
+parallel msort:
+20.0138ms
+```
+
+从上述运行时间可以得出，使用并行语句块的归并排序比普通排序的运行时间减少了约`75%`，从而验证了并行语句块的高效性。
