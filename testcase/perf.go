@@ -89,10 +89,10 @@ func main() {
     msort_normal(0, arr_size - 1)
     run_time := time.Since(start_time)
     fmt.Printf("%v\n", run_time)
-    for i = 0; i < 10; i = i + 1 {
-        fmt.Printf("%d ", arr[i])
-    }
-    fmt.Printf("\n")
+//     for i = 0; i < 10; i = i + 1 {
+//         fmt.Printf("%d ", arr[i])
+//     }
+//     fmt.Printf("\n")
 
     for i = 0; i < arr_size; i = i + 1 {
         fmt.Scanf("%d", &arr[i])
@@ -102,9 +102,9 @@ func main() {
     msort_parallel(0, arr_size - 1)
     run_time = time.Since(start_time)
     fmt.Printf("%v\n", run_time)
-    for i = 0; i < 10; i = i + 1 {
-        fmt.Printf("%d ", arr[i])
-    }
+//     for i = 0; i < 10; i = i + 1 {
+//         fmt.Printf("%d ", arr[i])
+//     }
 }
 func parallel_1 (x int, y int, r chan bool) {
 msort_parallel(x, y)
